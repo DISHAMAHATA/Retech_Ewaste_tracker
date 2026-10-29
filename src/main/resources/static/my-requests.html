@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My E-Waste Requests — ReTech</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--neutral-200);
+      padding-bottom: 0.75rem;
+    }
+    .filter-tab {
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-full);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--neutral-600);
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .filter-tab:hover {
+      background: var(--neutral-100);
+      color: var(--neutral-900);
+    }
+    .filter-tab.active {
+      background: var(--primary-700);
+      color: var(--white);
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    .detail-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--neutral-500);
+      letter-spacing: 0.05em;
+    }
+    .detail-val {
+      font-weight: 600;
+      color: var(--neutral-900);
+      margin-top: 0.15rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#9851;</div>
+        <span>ReTech</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/dashboard.html">Dashboard</a></li>
+        <li><a href="/my-requests.html" class="active">My Requests</a></li>
+        <li><a href="/tracking.html">Track Item</a></li>
+        <li><a href="/centres.html">Centres</a></li>
+      </ul>
+      <div class="nav-user" id="nav-user-container"></div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">My Collection Requests</h1>
+        <p class="page-subtitle">Track, review, or cancel your submitted e-waste pickup requests</p>
+      </div>
+      <div>
+        <a href="/dashboard.html" class="btn btn-primary">&#10010; New E-Waste Request</a>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="ALL">All Requests</button>
+      <button class="filter-tab" data-filter="PENDING">Pending Pickup</button>
+      <button class="filter-tab" data-filter="COLLECTED">Collected & Processing</button>
+      <button class="filter-tab" data-filter="COMPLETED">Recycled & Completed</button>
+      <button class="filter-tab" data-filter="CANCELLED">Cancelled / Rejected</button>
+    </div>
+
+    <!-- Requests Table -->
+    <div class="card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tracking Code</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Quantity</th>
+              <th>Weight</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="requests-tbody">
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                Loading your collection requests...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Request Details -->
+  <div class="modal-overlay" id="modal-req-details">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="details-modal-title">Request Details</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <div class="modal-body" id="details-modal-body">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="modal-footer" id="details-modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Cancel Confirmation -->
+  <div class="modal-overlay" id="modal-cancel-req">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--status-cancelled);">&#9888; Cancel Pickup Request</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="cancel-form">
+        <div class="modal-body">
+          <input type="hidden" id="cancel-request-id">
+          <p style="margin-bottom: 1rem; color: var(--neutral-700);">
+            Are you sure you want to cancel collection request <strong id="cancel-tracking-display"></strong>?
+            This will release any scheduled collection agent.
+          </p>
+          <div class="form-group">
+            <label class="form-label" for="cancel-reason">Reason for Cancellation (Optional)</label>
+            <input type="text" id="cancel-reason" class="form-control" placeholder="e.g., Decided to repair item / Dropped off at local centre">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Keep Request</button>
+          <button type="submit" id="confirm-cancel-btn" class="btn btn-danger">Confirm Cancellation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    let allRequests = [];
+    let currentFilter = 'ALL';
+
+    async function loadRequests() {
+      if (!ReTech.requireRole(['ROLE_CUSTOMER', 'ROLE_ADMIN'])) return;
+
+      try {
+        const res = await ReTech.api('/api/requests');
+        allRequests = res.data || [];
+        renderTable();
+      } catch (err) {
+        document.getElementById('requests-tbody').innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--status-cancelled); padding: 2rem;">
+              Failed to load requests: ${ReTech.escapeHtml(err.message)}
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('requests-tbody');
+      let filtered = allRequests;
+
+      if (currentFilter === 'PENDING') {
+        filtered = allRequests.filter(r => ['REQUEST_SUBMITTED', 'REQUEST_APPROVED', 'PICKUP_SCHEDULED'].includes(r.status));
+      } else if (currentFilter === 'COLLECTED') {
+        filtered = allRequests.filter(r => ['COLLECTED', 'RECEIVED_AT_FACILITY', 'UNDER_PROCESSING'].includes(r.status));
+      } else if (currentFilter === 'COMPLETED') {
+        filtered = allRequests.filter(r => r.status === 'RECYCLING_COMPLETED');
+      } else if (currentFilter === 'CANCELLED') {
+        filtered = allRequests.filter(r => ['CANCELLED', 'REQUEST_REJECTED'].includes(r.status));
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--neutral-500); padding: 2.5rem;">
+              No requests found in this category.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => `
+        <tr>
+          <td>
+            <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" style="font-family: monospace; font-weight: 700; color: var(--primary-700);">
+              ${ReTech.escapeHtml(r.trackingCode)}
+            </a>
+          </td>
+          <td style="font-weight: 600;">${ReTech.escapeHtml(r.itemName)}</td>
+          <td>${ReTech.escapeHtml(r.categoryLabel)}</td>
+          <td>${r.quantity}</td>
+          <td>${r.actualWeightKg ? r.actualWeightKg.toFixed(2) + ' kg (ver)' : (r.estimatedWeightKg ? r.estimatedWeightKg.toFixed(2) + ' kg (est)' : 'N/A')}</td>
+          <td>${ReTech.getStatusBadge(r.status, r.statusDisplayName)}</td>
+          <td>${ReTech.formatDate(r.actualPickupDate || r.preferredPickupDate)}</td>
+          <td>
+            <div style="display: flex; gap: 0.35rem;">
+              <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" class="btn btn-outline btn-sm">Timeline</a>
+              <button class="btn btn-secondary btn-sm" onclick="showDetails(${r.id})">Details</button>
+              ${r.cancellable ? `<button class="btn btn-danger btn-sm" onclick="openCancelModal(${r.id}, '${r.trackingCode}')">Cancel</button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Filter tab clicks
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = tab.dataset.filter;
+        renderTable();
+      });
+    });
+
+    function showDetails(requestId) {
+      const r = allRequests.find(item => item.id === requestId);
+      if (!r) return;
+
+      document.getElementById('details-modal-title').textContent = `${r.itemName} (${r.trackingCode})`;
+      document.getElementById('details-modal-body').innerHTML = `
+        <div class="detail-grid">
+          <div>
+            <div class="detail-label">Tracking Code</div>
+            <div class="detail-val" style="font-family: monospace;">${ReTech.escapeHtml(r.trackingCode)}</div>
+          </div>
+          <div>
+            <div class="detail-label">Status</div>
+            <div class="detail-val">${ReTech.getStatusBadge(r.status, r.statusDisplayName)}</div>
+          </div>
+          <div>
+            <div class="detail-label">Category</div>
+            <div class="detail-val">${ReTech.escapeHtml(r.categoryLabel)}</div>
+          </div>
+          <div>
+            <div class="detail-label">Condition</div>
+            <div class="detail-val">${ReTech.escapeHtml(r.itemConditionLabel)}</div>
+          </div>
+          <div>
+            <div class="detail-label">Quantity</div>
+            <div class="detail-val">${r.quantity} unit(s)</div>
+          </div>
+          <div>
+            <div class="detail-label">Weight</div>
+            <div class="detail-val">${r.actualWeightKg ? r.actualWeightKg.toFixed(2) + ' kg (verified)' : (r.estimatedWeightKg ? r.estimatedWeightKg.toFixed(2) + ' kg (estimated)' : 'Not recorded')}</div>
+          </div>
+          <div>
+            <div class="detail-label">City & Postal</div>
+            <div class="detail-val">${ReTech.escapeHtml(r.city)} (${ReTech.escapeHtml(r.postalCode)})</div>
+          </div>
+          <div>
+            <div class="detail-label">Pickup Address</div>
+            <div class="detail-val">${ReTech.escapeHtml(r.pickupAddress)}</div>
+          </div>
+          <div>
+            <div class="detail-label">Assigned Agent</div>
+            <div class="detail-val">${r.assignedAgentName ? ReTech.escapeHtml(r.assignedAgentName) + ' (' + ReTech.escapeHtml(r.assignedAgentPhone || '') + ')' : 'Pending assignment'}</div>
+          </div>
+          <div>
+            <div class="detail-label">Recycling Facility</div>
+            <div class="detail-val">${r.assignedFacilityName ? ReTech.escapeHtml(r.assignedFacilityName) : 'Routing pending'}</div>
+          </div>
+        </div>
+
+        ${r.notes ? `
+          <div style="margin-top: 1rem; padding: 0.75rem; background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-md);">
+            <div class="detail-label">Customer Handling Notes</div>
+            <p style="margin-top: 0.25rem; font-size: 0.875rem;">${ReTech.escapeHtml(r.notes)}</p>
+          </div>
+        ` : ''}
+
+        <div style="margin-top: 1.25rem; text-align: right;">
+          <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" class="btn btn-primary btn-sm">
+            View Live Tracking Audit Log &rarr;
+          </a>
+        </div>
+      `;
+
+      ReTech.openModal('modal-req-details');
+    }
+
+    function openCancelModal(requestId, trackingCode) {
+      document.getElementById('cancel-request-id').value = requestId;
+      document.getElementById('cancel-tracking-display').textContent = trackingCode;
+      document.getElementById('cancel-reason').value = '';
+      ReTech.openModal('modal-cancel-req');
+    }
+
+    document.getElementById('cancel-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('cancel-request-id').value;
+      const reason = document.getElementById('cancel-reason').value.trim();
+      const btn = document.getElementById('confirm-cancel-btn');
+
+      btn.disabled = true;
+      btn.textContent = 'Cancelling...';
+
+      try {
+        await ReTech.api(`/api/requests/${id}/cancel`, {
+          method: 'POST',
+          body: JSON.stringify({ reason })
+        });
+        ReTech.closeModal('modal-cancel-req');
+        ReTech.showToast('Request cancelled successfully', 'info');
+        loadRequests();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to cancel request', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirm Cancellation';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadRequests);
+  </script>
+</body>
+</html>

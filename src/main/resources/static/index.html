@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReTech — E-Waste Collection & Recycling Tracker</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .hero {
+      background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-800) 50%, var(--primary-700) 100%);
+      color: var(--white);
+      padding: 5rem 1.25rem 6rem;
+      text-align: center;
+      position: relative;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 0.35rem 1rem;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-full);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.5rem;
+      color: var(--primary-200);
+    }
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      max-width: 800px;
+      margin: 0 auto 1.25rem;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--primary-100);
+      max-width: 650px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 3rem;
+    }
+    .track-search-box {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--white);
+      padding: 0.5rem;
+      border-radius: var(--radius-lg);
+      display: flex;
+      gap: 0.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+    .track-search-box input {
+      flex: 1;
+      border: none;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      outline: none;
+      color: var(--neutral-900);
+    }
+    .section-title {
+      text-align: center;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--primary-900);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .section-subtitle {
+      text-align: center;
+      color: var(--neutral-500);
+      max-width: 600px;
+      margin: 0 auto 3rem;
+    }
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+    .workflow-card {
+      background: var(--white);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+    .step-num {
+      width: 2.5rem;
+      height: 2.5rem;
+      background: var(--primary-100);
+      color: var(--primary-800);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      margin: 0 auto 1.25rem;
+    }
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 4rem;
+    }
+    .category-card {
+      background: var(--white);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      transition: all 0.2s ease;
+    }
+    .category-card:hover {
+      border-color: var(--primary-500);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .category-card h3 {
+      font-size: 1.1rem;
+      color: var(--primary-900);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .category-card p {
+      font-size: 0.875rem;
+      color: var(--neutral-600);
+    }
+    .warning-box {
+      margin-top: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      background: #fef2f2;
+      border-left: 3px solid #ef4444;
+      font-size: 0.775rem;
+      color: #991b1b;
+      border-radius: var(--radius-sm);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#9851;</div>
+        <span>ReTech</span>
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/index.html" class="active">Home</a></li>
+        <li><a href="/tracking.html">Track E-Waste</a></li>
+        <li><a href="/centres.html">Collection Centres</a></li>
+      </ul>
+      <div class="nav-user" id="nav-user-container">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-badge">CIRCULAR ECONOMY &bull; SUSTAINABLE ELECTRONICS</div>
+    <h1>Dispose E-Waste Responsibly. Track Every Stage.</h1>
+    <p>Connect with authorized collection agents and certified recycling facilities to ensure zero e-waste reaches landfills.</p>
+    
+    <div class="hero-actions">
+      <a href="/register.html" class="btn btn-primary btn-lg">Request Free Pickup</a>
+      <a href="/centres.html" class="btn btn-secondary btn-lg">Find Drop-Off Hubs</a>
+    </div>
+
+    <!-- Quick Public Tracker Box -->
+    <form class="track-search-box" id="quick-track-form">
+      <input type="text" id="quick-track-input" placeholder="Enter Tracking Code (e.g., RET-2026-DEMO0001)" required>
+      <button type="submit" class="btn btn-primary">Track Progress</button>
+    </form>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+
+    <!-- Public Live Impact Counters -->
+    <div style="margin-top: -3rem; margin-bottom: 4rem;">
+      <div class="stats-grid" id="public-stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Requests Handled</div>
+          <div class="stat-value" id="stat-total-requests">0</div>
+          <div class="stat-desc">Community collection submissions</div>
+        </div>
+        <div class="stat-card stat-accent">
+          <div class="stat-label">Weight Diverted</div>
+          <div class="stat-value" id="stat-total-weight">0.00 kg</div>
+          <div class="stat-desc">Diverted from toxic landfills</div>
+        </div>
+        <div class="stat-card stat-info">
+          <div class="stat-label">Active Drop-off Hubs</div>
+          <div class="stat-value" id="stat-active-centres">0</div>
+          <div class="stat-desc">Community collection centres</div>
+        </div>
+        <div class="stat-card stat-warning">
+          <div class="stat-label">Certified Facilities</div>
+          <div class="stat-value" id="stat-active-facilities">0</div>
+          <div class="stat-desc">Registered material recovery plants</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <section>
+      <h2 class="section-title">The Collection & Recycling Lifecycle</h2>
+      <p class="section-subtitle">Every electronic item is logged with an immutable audit trail from doorstep pickup to physical material extraction.</p>
+      
+      <div class="workflow-grid">
+        <div class="workflow-card">
+          <div class="step-num">1</div>
+          <h3>Register E-Waste</h3>
+          <p>Submit item details, condition, and preferred pickup date. Instantly receive a unique <code>RET-YYYY-XXXXXXXX</code> tracking identifier.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="step-num">2</div>
+          <h3>Agent Collection</h3>
+          <p>Authorized collection personnel inspect the item, verify initial weight, and securely transport it to the nearest consolidation depot.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="step-num">3</div>
+          <h3>Facility Intake</h3>
+          <p>Certified recycling facility operators log receipt, perform non-destructive sorting, and categorize hazardous components.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="step-num">4</div>
+          <h3>Material Recovery</h3>
+          <p>Safe extraction of copper, precious metals, and reusable plastics. Transparent evidence notes recorded with zero landfill contamination.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Supported E-Waste Categories -->
+    <section>
+      <h2 class="section-title">Accepted E-Waste Categories</h2>
+      <p class="section-subtitle">We manage consumer and office electronics with specialized handling guidelines for each category.</p>
+
+      <div class="category-grid">
+        <div class="category-card">
+          <h3>&#128187; Laptops & Computers</h3>
+          <p>Old desktops, notebooks, servers, and mainframes. Data sanitation and component harvesting are prioritized.</p>
+        </div>
+        <div class="category-card">
+          <h3>&#128241; Mobile Phones & Tablets</h3>
+          <p>Smartphones, feature phones, and tablets. Safe battery removal prevents lithium runaway hazards.</p>
+        </div>
+        <div class="category-card">
+          <h3>&#9000; Keyboards & Peripherals</h3>
+          <p>Computer mice, keyboards, webcams, headsets, and gaming controllers for plastics granulation.</p>
+        </div>
+        <div class="category-card">
+          <h3>&#128268; Cables, Chargers & Adapters</h3>
+          <p>Copper wiring, power cords, and transformers stripped for high-purity electrical copper reclamation.</p>
+        </div>
+        <div class="category-card">
+          <h3>&#128250; Televisions & Displays</h3>
+          <p>LCD, LED, and legacy CRT monitors. Specialized extraction of leaded glass and phosphors under sealed vacuum.</p>
+        </div>
+        <div class="category-card">
+          <h3>&#128267; Batteries & Power Banks</h3>
+          <p>Lithium-ion, LiFePO4, and NiMH cells. Critical minerals (cobalt, lithium, nickel) recovered safely.</p>
+          <div class="warning-box">
+            <strong>Warning:</strong> Swollen or leaking batteries must be taped and packed in insulated containers before collection.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div>
+        <strong>ReTech — E-Waste Collection & Recycling Tracker</strong>
+        <p>A sustainable engineering initiative for responsible circular recycling.</p>
+      </div>
+      <div>
+        <a href="/tracking.html">Track Item</a> &bull;
+        <a href="/centres.html">Centres Directory</a> &bull;
+        <a href="/login.html">Sign In</a> &bull;
+        <a href="/register.html">Register</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+  <script>
+    // Quick track search form handler
+    document.getElementById('quick-track-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = document.getElementById('quick-track-input').value.trim();
+      if (code) {
+        window.location.href = `/tracking.html?code=${encodeURIComponent(code)}`;
+      }
+    });
+
+    // Load live public statistics
+    async function loadPublicStats() {
+      try {
+        const res = await ReTech.api('/api/statistics/public');
+        if (res && res.data) {
+          const s = res.data;
+          document.getElementById('stat-total-requests').textContent = s.totalRequestsSubmitted || 0;
+          document.getElementById('stat-total-weight').textContent = (s.totalWeightCollectedKg || 0).toFixed(2) + ' kg';
+          document.getElementById('stat-active-centres').textContent = s.totalActiveCentres || 0;
+          document.getElementById('stat-active-facilities').textContent = s.totalActiveFacilities || 0;
+        }
+      } catch (e) {
+        console.warn('Could not load public statistics:', e);
+      }
+    }
+    loadPublicStats();
+  </script>
+</body>
+</html>

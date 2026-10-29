@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Operations Center — ReTech</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .admin-tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--neutral-200);
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .admin-tab {
+      padding: 0.75rem 1.25rem;
+      font-weight: 700;
+      font-size: 0.925rem;
+      color: var(--neutral-600);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      margin-bottom: -2px;
+      transition: all 0.15s ease;
+    }
+    .admin-tab:hover {
+      color: var(--primary-800);
+    }
+    .admin-tab.active {
+      color: var(--primary-800);
+      border-bottom-color: var(--primary-700);
+    }
+    .admin-section {
+      display: none;
+    }
+    .admin-section.active {
+      display: block;
+    }
+    .filter-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#128274;</div>
+        <span>ReTech Administrator</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/admin.html" class="active">Operations Center</a></li>
+        <li><a href="/dashboard.html">Customer View</a></li>
+        <li><a href="/tracking.html">Track Item</a></li>
+        <li><a href="/centres.html">Centres</a></li>
+      </ul>
+      <div class="nav-user" id="nav-user-container"></div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Operations & Lifecycle Control Center</h1>
+        <p class="page-subtitle">Oversee collection requests, assign fleet dispatchers, and monitor circular recycling KPIs</p>
+      </div>
+      <div>
+        <a href="/api/admin/reports/export" class="btn btn-primary" id="btn-export-csv" download>
+          &#128196; Export Requests CSV
+        </a>
+      </div>
+    </div>
+
+    <!-- System Impact KPI Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Submissions</div>
+        <div class="stat-value" id="admin-stat-total">0</div>
+        <div class="stat-desc">All registered collection requests</div>
+      </div>
+      <div class="stat-card stat-info">
+        <div class="stat-label">Collected & In-Transit</div>
+        <div class="stat-value" id="admin-stat-collected">0</div>
+        <div class="stat-desc">Diverted from community</div>
+      </div>
+      <div class="stat-card stat-accent">
+        <div class="stat-label">Recycled Weight</div>
+        <div class="stat-value" id="admin-stat-recycled">0.00 kg</div>
+        <div class="stat-desc">Confirmed material extraction</div>
+      </div>
+      <div class="stat-card stat-warning">
+        <div class="stat-label">Pending Action</div>
+        <div class="stat-value" id="admin-stat-pending">0</div>
+        <div class="stat-desc">Requires agent dispatch or review</div>
+      </div>
+    </div>
+
+    <!-- Admin Sub-Navigation Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-target="section-requests">&#128230; All Requests</button>
+      <button class="admin-tab" data-target="section-users">&#128101; User Directory</button>
+      <button class="admin-tab" data-target="section-centres">&#128205; Collection Centres</button>
+      <button class="admin-tab" data-target="section-facilities">&#9881; Recycling Facilities</button>
+    </div>
+
+    <!-- SECTION 1: REQUESTS MANAGEMENT -->
+    <section id="section-requests" class="admin-section active">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Manage E-Waste Collection Requests</h2>
+          <button class="btn btn-secondary btn-sm" onclick="loadRequests()">&#8635; Refresh</button>
+        </div>
+
+        <div class="filter-row">
+          <input type="text" id="req-search" class="form-control" style="flex:2; min-width: 220px;" placeholder="Search tracking ID, item, customer, or city...">
+          <select id="req-filter-status" class="form-control" style="flex:1; min-width: 160px;">
+            <option value="">All Statuses</option>
+            <option value="REQUEST_SUBMITTED">Request Submitted</option>
+            <option value="REQUEST_APPROVED">Request Approved</option>
+            <option value="PICKUP_SCHEDULED">Pickup Scheduled</option>
+            <option value="COLLECTED">Collected</option>
+            <option value="RECEIVED_AT_FACILITY">Received at Facility</option>
+            <option value="UNDER_PROCESSING">Under Processing</option>
+            <option value="RECYCLING_COMPLETED">Recycling Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="REQUEST_REJECTED">Request Rejected</option>
+          </select>
+          <select id="req-filter-category" class="form-control" style="flex:1; min-width: 160px;">
+            <option value="">All Categories</option>
+            <option value="LAPTOPS_COMPUTERS">Laptops & Computers</option>
+            <option value="MOBILE_TABLETS">Mobile Phones & Tablets</option>
+            <option value="ACCESSORIES_PERIPHERALS">Keyboards, Mice & Accessories</option>
+            <option value="CABLES_CHARGERS">Cables & Chargers</option>
+            <option value="TELEVISIONS_DISPLAYS">Televisions & Displays</option>
+            <option value="BATTERIES_POWERBANKS">Batteries & Power Banks</option>
+            <option value="OTHER_ELECTRONICS">Other Household Electronics</option>
+          </select>
+          <button class="btn btn-secondary" onclick="applyRequestFilters()">Filter</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tracking Code</th>
+                <th>Item & Qty</th>
+                <th>Customer</th>
+                <th>City</th>
+                <th>Status</th>
+                <th>Assigned Agent</th>
+                <th>Assigned Facility</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-requests-tbody">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                  Loading requests...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: USERS MANAGEMENT -->
+    <section id="section-users" class="admin-section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">User Accounts & Roles</h2>
+          <button class="btn btn-secondary btn-sm" onclick="loadUsers()">&#8635; Refresh Users</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-tbody">
+              <tr>
+                <td colspan="9" style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                  Loading user records...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: COLLECTION CENTRES -->
+    <section id="section-centres" class="admin-section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Collection Drop-Off Centres</h2>
+          <button class="btn btn-primary btn-sm" onclick="openAddCentreModal()">&#10010; Add Collection Hub</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Centre Name</th>
+                <th>Address & City</th>
+                <th>Operating Hours</th>
+                <th>Contact</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-centres-tbody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                  Loading centres...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: RECYCLING FACILITIES -->
+    <section id="section-facilities" class="admin-section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Authorized Recycling Plants</h2>
+          <button class="btn btn-primary btn-sm" onclick="openAddFacilityModal()">&#10010; Register Facility</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Facility Name</th>
+                <th>Location</th>
+                <th>Daily Capacity (kg)</th>
+                <th>Supported Materials</th>
+                <th>Contact</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-facilities-tbody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                  Loading facilities...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Assign Agent & Schedule Pickup -->
+  <div class="modal-overlay" id="modal-assign-agent">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">&#128666; Assign Collection Agent</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="assign-agent-form">
+        <div class="modal-body">
+          <input type="hidden" id="assign-agent-req-id">
+          <p style="margin-bottom: 1rem; color: var(--neutral-700);" id="assign-agent-item-desc"></p>
+
+          <div class="form-group">
+            <label class="form-label required" for="agent-select">Select Collection Agent</label>
+            <select id="agent-select" class="form-control" required></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="agent-pickup-date">Scheduled Pickup Date</label>
+            <input type="date" id="agent-pickup-date" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" id="save-agent-btn" class="btn btn-primary">Dispatch Agent</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Assign Facility -->
+  <div class="modal-overlay" id="modal-assign-facility">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">&#9881; Route to Recycling Facility</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="assign-facility-form">
+        <div class="modal-body">
+          <input type="hidden" id="assign-fac-req-id">
+          <p style="margin-bottom: 1rem; color: var(--neutral-700);" id="assign-fac-item-desc"></p>
+
+          <div class="form-group">
+            <label class="form-label required" for="facility-select">Select Certified Recycling Facility</label>
+            <select id="facility-select" class="form-control" required></select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" id="save-fac-btn" class="btn btn-primary">Route Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Change User Role / Status -->
+  <div class="modal-overlay" id="modal-edit-user">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">&#128100; Manage User Permissions</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="edit-user-form">
+        <div class="modal-body">
+          <input type="hidden" id="edit-user-id">
+          <div style="margin-bottom: 1rem;" id="edit-user-meta"></div>
+
+          <div class="form-group">
+            <label class="form-label required" for="edit-user-role">Assigned System Role</label>
+            <select id="edit-user-role" class="form-control" required>
+              <option value="ROLE_CUSTOMER">Customer</option>
+              <option value="ROLE_AGENT">Collection Agent</option>
+              <option value="ROLE_OPERATOR">Recycling Operator</option>
+              <option value="ROLE_ADMIN">Administrator</option>
+            </select>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="edit-user-active">
+            <label for="edit-user-active" style="font-weight: 600;">Account Active & Allowed to Sign In</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" id="save-user-btn" class="btn btn-primary">Update User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Collection Centre -->
+  <div class="modal-overlay" id="modal-add-centre">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">&#10010; Add Collection Hub</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="add-centre-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label required" for="centre-name">Hub Name</label>
+            <input type="text" id="centre-name" class="form-control" placeholder="e.g. Metro E-Waste Kiosk" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="centre-address">Address</label>
+            <input type="text" id="centre-address" class="form-control" placeholder="Street address" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required" for="centre-city">City</label>
+              <input type="text" id="centre-city" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required" for="centre-postal">Postal Code</label>
+              <input type="text" id="centre-postal" class="form-control" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="centre-phone">Contact Phone</label>
+              <input type="text" id="centre-phone" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="centre-email">Contact Email</label>
+              <input type="email" id="centre-email" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="centre-categories">Supported Categories (comma separated)</label>
+            <input type="text" id="centre-categories" class="form-control" value="LAPTOPS_COMPUTERS,MOBILE_TABLETS,ACCESSORIES_PERIPHERALS" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="centre-hours">Operating Hours</label>
+            <input type="text" id="centre-hours" class="form-control" placeholder="Mon-Sat 09:00 - 18:00">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Hub</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Recycling Facility -->
+  <div class="modal-overlay" id="modal-add-facility">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">&#10010; Register Recycling Facility</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="add-facility-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label required" for="fac-name">Facility Name</label>
+            <input type="text" id="fac-name" class="form-control" placeholder="e.g. Apex Reclamation Works" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="fac-address">Plant Address</label>
+            <input type="text" id="fac-address" class="form-control" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required" for="fac-city">City</label>
+              <input type="text" id="fac-city" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required" for="fac-postal">Postal Code</label>
+              <input type="text" id="fac-postal" class="form-control" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="fac-capacity">Daily Capacity (kg)</label>
+              <input type="number" id="fac-capacity" class="form-control" value="2000" min="10" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fac-phone">Contact Phone</label>
+              <input type="text" id="fac-phone" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fac-materials">Supported Materials & Recoveries</label>
+            <input type="text" id="fac-materials" class="form-control" placeholder="Copper, Precious Metals, Lithium Cells, ABS">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Register Plant</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    let allRequests = [];
+    let allAgents = [];
+    let allFacilities = [];
+    let allUsers = [];
+
+    async function initAdmin() {
+      if (!ReTech.requireRole(['ROLE_ADMIN'])) return;
+
+      loadSystemStats();
+      await loadAgentsAndFacilities();
+      loadRequests();
+      loadUsers();
+      loadCentres();
+      loadFacilitiesList();
+    }
+
+    async function loadSystemStats() {
+      try {
+        const res = await ReTech.api('/api/admin/statistics');
+        if (res && res.data) {
+          const s = res.data;
+          document.getElementById('admin-stat-total').textContent = s.totalRequestsSubmitted || 0;
+          document.getElementById('admin-stat-collected').textContent = s.totalRequestsCollected || 0;
+          document.getElementById('admin-stat-recycled').textContent = (s.totalWeightRecycledKg || 0).toFixed(2) + ' kg';
+          document.getElementById('admin-stat-pending').textContent = s.totalRequestsPending || 0;
+        }
+      } catch (err) {
+        console.warn('Could not load admin stats:', err);
+      }
+    }
+
+    async function loadAgentsAndFacilities() {
+      try {
+        const [agRes, facRes] = await Promise.all([
+          ReTech.api('/api/admin/agents'),
+          ReTech.api('/api/admin/facilities')
+        ]);
+        allAgents = agRes.data || [];
+        allFacilities = facRes.data || [];
+
+        // Populate modal selects
+        document.getElementById('agent-select').innerHTML = allAgents.map(a => `
+          <option value="${a.id}">${ReTech.escapeHtml(a.fullName)} (${ReTech.escapeHtml(a.phone || a.city || 'Available')})</option>
+        `).join('');
+
+        document.getElementById('facility-select').innerHTML = allFacilities.map(f => `
+          <option value="${f.id}">${ReTech.escapeHtml(f.name)} &bull; ${ReTech.escapeHtml(f.city)}</option>
+        `).join('');
+      } catch (err) {
+        console.warn('Could not load agents/facilities dropdowns:', err);
+      }
+    }
+
+    // Tab switcher
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+    });
+
+    // --- REQUESTS ---
+    async function loadRequests() {
+      const tbody = document.getElementById('admin-requests-tbody');
+      const status = document.getElementById('req-filter-status').value;
+      const category = document.getElementById('req-filter-category').value;
+      const search = document.getElementById('req-search').value.trim();
+
+      const params = new URLSearchParams();
+      if (status) params.append('status', status);
+      if (category) params.append('category', category);
+      if (search) params.append('search', search);
+
+      try {
+        const res = await ReTech.api(`/api/admin/requests?${params.toString()}`);
+        allRequests = (res.data && res.data.content) ? res.data.content : [];
+
+        if (allRequests.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--neutral-500); padding: 2.5rem;">No requests match the query.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = allRequests.map(r => `
+          <tr>
+            <td>
+              <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" style="font-family: monospace; font-weight: 700; color: var(--primary-700);">
+                ${ReTech.escapeHtml(r.trackingCode)}
+              </a>
+            </td>
+            <td>
+              <strong>${ReTech.escapeHtml(r.itemName)}</strong>
+              <div style="font-size: 0.775rem; color: var(--neutral-500);">${r.quantity} unit(s) &bull; ${ReTech.escapeHtml(r.categoryLabel)}</div>
+            </td>
+            <td>
+              <div>${ReTech.escapeHtml(r.customerName)}</div>
+              <div style="font-size: 0.775rem; color: var(--neutral-500);">${ReTech.escapeHtml(r.customerPhone || '')}</div>
+            </td>
+            <td>${ReTech.escapeHtml(r.city)}</td>
+            <td>${ReTech.getStatusBadge(r.status, r.statusDisplayName)}</td>
+            <td>${r.assignedAgentName ? `<span style="font-weight:600; color:var(--primary-800);">${ReTech.escapeHtml(r.assignedAgentName)}</span>` : '<span style="color:var(--neutral-400);">Unassigned</span>'}</td>
+            <td>${r.assignedFacilityName ? `<span style="font-weight:600; color:var(--neutral-700);">${ReTech.escapeHtml(r.assignedFacilityName)}</span>` : '<span style="color:var(--neutral-400);">Unassigned</span>'}</td>
+            <td>
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn btn-secondary btn-sm" onclick="openAssignAgentModal(${r.id})">Agent</button>
+                <button class="btn btn-secondary btn-sm" onclick="openAssignFacilityModal(${r.id})">Facility</button>
+                <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" class="btn btn-outline btn-sm">Audit</a>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--status-cancelled); padding:2rem;">Failed to load requests: ${ReTech.escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function applyRequestFilters() {
+      loadRequests();
+    }
+
+    function openAssignAgentModal(requestId) {
+      const r = allRequests.find(item => item.id === requestId);
+      if (!r) return;
+      document.getElementById('assign-agent-req-id').value = r.id;
+      document.getElementById('assign-agent-item-desc').innerHTML = `Assigning pickup route for <strong>${ReTech.escapeHtml(r.itemName)}</strong> (${ReTech.escapeHtml(r.trackingCode)}) at ${ReTech.escapeHtml(r.pickupAddress)}, ${ReTech.escapeHtml(r.city)}`;
+      document.getElementById('agent-pickup-date').value = r.preferredPickupDate || new Date().toISOString().split('T')[0];
+      ReTech.openModal('modal-assign-agent');
+    }
+
+    document.getElementById('assign-agent-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('assign-agent-req-id').value;
+      const agentId = document.getElementById('agent-select').value;
+      const date = document.getElementById('agent-pickup-date').value;
+
+      try {
+        await ReTech.api(`/api/admin/requests/${id}/assign-agent`, {
+          method: 'POST',
+          body: JSON.stringify({
+            agentId: parseInt(agentId, 10),
+            scheduledPickupDate: date
+          })
+        });
+        ReTech.closeModal('modal-assign-agent');
+        ReTech.showToast('Agent assigned & pickup scheduled!', 'success');
+        loadRequests();
+        loadSystemStats();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to assign agent', 'error');
+      }
+    });
+
+    function openAssignFacilityModal(requestId) {
+      const r = allRequests.find(item => item.id === requestId);
+      if (!r) return;
+      document.getElementById('assign-fac-req-id').value = r.id;
+      document.getElementById('assign-fac-item-desc').innerHTML = `Route <strong>${ReTech.escapeHtml(r.itemName)}</strong> (${ReTech.escapeHtml(r.trackingCode)}) to certified recovery facility`;
+      ReTech.openModal('modal-assign-facility');
+    }
+
+    document.getElementById('assign-facility-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('assign-fac-req-id').value;
+      const facilityId = document.getElementById('facility-select').value;
+
+      try {
+        await ReTech.api(`/api/admin/requests/${id}/assign-facility`, {
+          method: 'POST',
+          body: JSON.stringify({ facilityId: parseInt(facilityId, 10) })
+        });
+        ReTech.closeModal('modal-assign-facility');
+        ReTech.showToast('Item routed to recycling facility!', 'success');
+        loadRequests();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to route facility', 'error');
+      }
+    });
+
+    // --- USERS MANAGEMENT ---
+    async function loadUsers() {
+      const tbody = document.getElementById('admin-users-tbody');
+      try {
+        const res = await ReTech.api('/api/admin/users');
+        allUsers = res.data || [];
+        tbody.innerHTML = allUsers.map(u => `
+          <tr>
+            <td>${u.id}</td>
+            <td style="font-weight:600;">${ReTech.escapeHtml(u.fullName)}</td>
+            <td>${ReTech.escapeHtml(u.username)}</td>
+            <td>${ReTech.escapeHtml(u.email)}</td>
+            <td>${ReTech.escapeHtml(u.phone || 'N/A')}</td>
+            <td><span class="role-pill">${ReTech.escapeHtml(u.roleDisplayName || u.role)}</span></td>
+            <td>
+              <span class="status-pill ${u.active ? 'status-RECYCLING_COMPLETED' : 'status-CANCELLED'}">
+                ${u.active ? 'ACTIVE' : 'DEACTIVATED'}
+              </span>
+            </td>
+            <td style="font-size:0.8rem; color:var(--neutral-500);">${ReTech.formatDate(u.createdAt)}</td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="openEditUserModal(${u.id})">Edit Role</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--status-cancelled); padding:2rem;">Failed to load users: ${ReTech.escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    function openEditUserModal(userId) {
+      const u = allUsers.find(item => item.id === userId);
+      if (!u) return;
+      document.getElementById('edit-user-id').value = u.id;
+      document.getElementById('edit-user-meta').innerHTML = `Managing permissions for <strong>${ReTech.escapeHtml(u.fullName)}</strong> (${ReTech.escapeHtml(u.email)})`;
+      document.getElementById('edit-user-role').value = u.role;
+      document.getElementById('edit-user-active').checked = u.active;
+      ReTech.openModal('modal-edit-user');
+    }
+
+    document.getElementById('edit-user-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('edit-user-id').value;
+      const role = document.getElementById('edit-user-role').value;
+      const active = document.getElementById('edit-user-active').checked;
+
+      try {
+        await ReTech.api(`/api/admin/users/${id}/role`, {
+          method: 'PATCH',
+          body: JSON.stringify({ role, active })
+        });
+        ReTech.closeModal('modal-edit-user');
+        ReTech.showToast('User updated successfully!', 'success');
+        loadUsers();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to update user', 'error');
+      }
+    });
+
+    // --- CENTRES CRUD ---
+    async function loadCentres() {
+      const tbody = document.getElementById('admin-centres-tbody');
+      try {
+        const res = await ReTech.api('/api/centres');
+        const list = res.data || [];
+        tbody.innerHTML = list.map(c => `
+          <tr>
+            <td style="font-weight:600;">${ReTech.escapeHtml(c.name)}</td>
+            <td>${ReTech.escapeHtml(c.address)}, ${ReTech.escapeHtml(c.city)}</td>
+            <td>${ReTech.escapeHtml(c.operatingHours || 'N/A')}</td>
+            <td>${ReTech.escapeHtml(c.contactPhone || c.contactEmail || 'N/A')}</td>
+            <td><span class="status-pill status-RECYCLING_COMPLETED">ACTIVE</span></td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="deactivateCentre(${c.id})">Deactivate</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--status-cancelled);">Failed to load centres</td></tr>`;
+      }
+    }
+
+    function openAddCentreModal() {
+      document.getElementById('add-centre-form').reset();
+      ReTech.openModal('modal-add-centre');
+    }
+
+    document.getElementById('add-centre-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('centre-name').value.trim(),
+        address: document.getElementById('centre-address').value.trim(),
+        city: document.getElementById('centre-city').value.trim(),
+        postalCode: document.getElementById('centre-postal').value.trim(),
+        contactPhone: document.getElementById('centre-phone').value.trim(),
+        contactEmail: document.getElementById('centre-email').value.trim(),
+        supportedCategories: document.getElementById('centre-categories').value.trim(),
+        operatingHours: document.getElementById('centre-hours').value.trim(),
+        active: true
+      };
+
+      try {
+        await ReTech.api('/api/admin/centres', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        ReTech.closeModal('modal-add-centre');
+        ReTech.showToast('Collection hub created!', 'success');
+        loadCentres();
+        loadSystemStats();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to create centre', 'error');
+      }
+    });
+
+    async function deactivateCentre(id) {
+      if (!confirm('Are you sure you want to deactivate this collection hub?')) return;
+      try {
+        await ReTech.api(`/api/admin/centres/${id}`, { method: 'DELETE' });
+        ReTech.showToast('Centre deactivated', 'info');
+        loadCentres();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to deactivate centre', 'error');
+      }
+    }
+
+    // --- FACILITIES CRUD ---
+    async function loadFacilitiesList() {
+      const tbody = document.getElementById('admin-facilities-tbody');
+      try {
+        const res = await ReTech.api('/api/admin/facilities');
+        const list = res.data || [];
+        tbody.innerHTML = list.map(f => `
+          <tr>
+            <td style="font-weight:600;">${ReTech.escapeHtml(f.name)}</td>
+            <td>${ReTech.escapeHtml(f.city)} (${ReTech.escapeHtml(f.postalCode)})</td>
+            <td>${f.capacityKgPerDay ? f.capacityKgPerDay.toFixed(0) + ' kg/day' : 'N/A'}</td>
+            <td style="font-size:0.8rem; max-width:250px;">${ReTech.escapeHtml(f.supportedMaterials || 'Various')}</td>
+            <td>${ReTech.escapeHtml(f.contactPhone || f.contactEmail || 'N/A')}</td>
+            <td><span class="status-pill status-RECYCLING_COMPLETED">ACTIVE</span></td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="deactivateFacility(${f.id})">Deactivate</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--status-cancelled);">Failed to load facilities</td></tr>`;
+      }
+    }
+
+    function openAddFacilityModal() {
+      document.getElementById('add-facility-form').reset();
+      ReTech.openModal('modal-add-facility');
+    }
+
+    document.getElementById('add-facility-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('fac-name').value.trim(),
+        address: document.getElementById('fac-address').value.trim(),
+        city: document.getElementById('fac-city').value.trim(),
+        postalCode: document.getElementById('fac-postal').value.trim(),
+        capacityKgPerDay: parseFloat(document.getElementById('fac-capacity').value),
+        contactPhone: document.getElementById('fac-phone').value.trim(),
+        supportedMaterials: document.getElementById('fac-materials').value.trim(),
+        active: true
+      };
+
+      try {
+        await ReTech.api('/api/admin/facilities', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        ReTech.closeModal('modal-add-facility');
+        ReTech.showToast('Recycling plant registered!', 'success');
+        loadFacilitiesList();
+        loadAgentsAndFacilities();
+        loadSystemStats();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to create facility', 'error');
+      }
+    });
+
+    async function deactivateFacility(id) {
+      if (!confirm('Are you sure you want to deactivate this recycling facility?')) return;
+      try {
+        await ReTech.api(`/api/admin/facilities/${id}`, { method: 'DELETE' });
+        ReTech.showToast('Facility deactivated', 'info');
+        loadFacilitiesList();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to deactivate facility', 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initAdmin);
+  </script>
+</body>
+</html>

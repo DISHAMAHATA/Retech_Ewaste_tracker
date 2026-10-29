@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recycling Centre Operator Portal — ReTech</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#9881;</div>
+        <span>ReTech Recycling Facility</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/facility.html" class="active">Processing Floor</a></li>
+        <li><a href="/tracking.html">Track E-Waste</a></li>
+        <li><a href="/centres.html">Centres</a></li>
+      </ul>
+      <div class="nav-user" id="nav-user-container"></div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Facility Processing & Evidence Verification</h1>
+        <p class="page-subtitle">Confirm intake, log disassembly recovery metrics, and register certified recycling outcomes</p>
+      </div>
+      <div>
+        <button class="btn btn-secondary" onclick="loadFacilityData()">&#8635; Refresh Floor Data</button>
+      </div>
+    </div>
+
+    <!-- Facility Recovery Statistics -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Intake Received</div>
+        <div class="stat-value" id="fac-stat-intake">0.00 kg</div>
+        <div class="stat-desc">Physically received at facility</div>
+      </div>
+      <div class="stat-card stat-accent">
+        <div class="stat-label">Certified Recycled</div>
+        <div class="stat-value" id="fac-stat-recycled">0.00 kg</div>
+        <div class="stat-desc">Metals, glass, and polymers recovered</div>
+      </div>
+      <div class="stat-card stat-info">
+        <div class="stat-label">Components Reused</div>
+        <div class="stat-value" id="fac-stat-reused">0.00 kg</div>
+        <div class="stat-desc">Tested working parts harvested</div>
+      </div>
+      <div class="stat-card stat-warning">
+        <div class="stat-label">Hazardous Neutralized</div>
+        <div class="stat-value" id="fac-stat-disposed">0.00 kg</div>
+        <div class="stat-desc">Safely treated toxic residues</div>
+      </div>
+    </div>
+
+    <!-- Section: Awaiting Facility Intake -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div class="card-header">
+        <h2 class="card-title">&#128230; E-Waste Inbound: Awaiting Facility Intake</h2>
+        <span class="status-pill status-COLLECTED" style="font-size: 0.75rem;">COLLECTED BY AGENTS</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tracking Code</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Qty</th>
+              <th>Agent Scale Weight</th>
+              <th>Collection Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="intake-tbody">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                Loading inbound queue...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section: Processing & Verification Evidence Records -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">&#9881; Verified Material Recovery Evidence Records</h2>
+        <span style="font-size: 0.8rem; color: var(--neutral-500);">Documented physical outcomes</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tracking Code</th>
+              <th>Item Name</th>
+              <th>Facility Stage</th>
+              <th>Outcome</th>
+              <th>Weight Recycled</th>
+              <th>Weight Reused</th>
+              <th>Weight Disposed</th>
+              <th>Verification Notes</th>
+              <th>Logged At</th>
+            </tr>
+          </thead>
+          <tbody id="records-tbody">
+            <tr>
+              <td colspan="9" style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                Loading facility processing records...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Log Processing Record & Advance Stage -->
+  <div class="modal-overlay" id="modal-process-record">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">&#9874; Log Material Recovery Evidence</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="process-record-form">
+        <div class="modal-body">
+          <input type="hidden" id="rec-req-id">
+
+          <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-md);">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--neutral-500); text-transform: uppercase;">Batch Details</div>
+            <div style="font-weight: 700; font-size: 1.05rem;" id="rec-modal-item"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required" for="rec-facility-select">Processing Facility</label>
+              <select id="rec-facility-select" class="form-control" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label required" for="rec-stage-select">Processing Stage</label>
+              <select id="rec-stage-select" class="form-control" required>
+                <option value="RECEIVED">Intake & Weight Verification</option>
+                <option value="SORTING">Material & Component Sorting</option>
+                <option value="DISASSEMBLY">Mechanical / Manual Disassembly</option>
+                <option value="RECOVERY">Material Extraction & Smelting</option>
+                <option value="COMPLETED">Final Recycling Completed</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required" for="rec-qty">Quantity Handled</label>
+              <input type="number" id="rec-qty" class="form-control" min="1" value="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required" for="rec-weight-received">Verified Weight (kg)</label>
+              <input type="number" id="rec-weight-received" class="form-control" step="0.01" min="0.01" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="rec-weight-reused">Weight Reused (kg)</label>
+              <input type="number" id="rec-weight-reused" class="form-control" step="0.01" min="0" value="0.00">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="rec-weight-recycled">Weight Recycled (kg)</label>
+              <input type="number" id="rec-weight-recycled" class="form-control" step="0.01" min="0" value="0.00">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="rec-weight-disposed">Toxic Disposed (kg)</label>
+              <input type="number" id="rec-weight-disposed" class="form-control" step="0.01" min="0" value="0.00">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="rec-outcome-select">Final Recovery Outcome</label>
+            <select id="rec-outcome-select" class="form-control" required>
+              <option value="MATERIAL_RECOVERY">Raw Material Recovery (Copper, Aluminium, Precious Metals, ABS)</option>
+              <option value="COMPONENT_HARVESTING">Component Harvesting for Refurbishment & Spares</option>
+              <option value="SAFE_HAZARDOUS_DISPOSAL">Safe Hazardous Waste Neutralization (Batteries, Lead Glass)</option>
+              <option value="REFURBISHED">Item Fully Tested & Refurbished</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="rec-notes">Verification Evidence Notes</label>
+            <textarea id="rec-notes" class="form-control" placeholder="Specify extraction line, ESD certifications, lot numbers, or chemical neutralization methods..." required maxlength="500"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" id="save-record-btn" class="btn btn-primary">Save Evidence Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    let intakeRequests = [];
+    let processingRecords = [];
+    let facilities = [];
+
+    async function initFacilityPortal() {
+      if (!ReTech.requireRole(['ROLE_OPERATOR', 'ROLE_ADMIN'])) return;
+      await loadFacilities();
+      await loadFacilityData();
+    }
+
+    async function loadFacilities() {
+      try {
+        const res = await ReTech.api('/api/admin/facilities');
+        facilities = res.data || [];
+        const select = document.getElementById('rec-facility-select');
+        select.innerHTML = facilities.map(f => `
+          <option value="${f.id}">${ReTech.escapeHtml(f.name)} (${ReTech.escapeHtml(f.city)})</option>
+        `).join('');
+      } catch (e) {
+        console.warn('Could not load facilities list:', e);
+      }
+    }
+
+    async function loadFacilityData() {
+      loadIntakeQueue();
+      loadRecords();
+    }
+
+    async function loadIntakeQueue() {
+      const tbody = document.getElementById('intake-tbody');
+      try {
+        const res = await ReTech.api('/api/facility/requests/intake');
+        intakeRequests = res.data || [];
+
+        if (intakeRequests.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--neutral-500); padding: 2.5rem;">
+                No collected items currently waiting for facility intake. All items are processed or in transit.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = intakeRequests.map(r => `
+          <tr>
+            <td>
+              <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" style="font-family: monospace; font-weight: 700; color: var(--primary-700);">
+                ${ReTech.escapeHtml(r.trackingCode)}
+              </a>
+            </td>
+            <td style="font-weight: 600;">${ReTech.escapeHtml(r.itemName)}</td>
+            <td>${ReTech.escapeHtml(r.categoryLabel)}</td>
+            <td>${r.quantity}</td>
+            <td>${r.actualWeightKg ? r.actualWeightKg.toFixed(2) + ' kg' : 'Unweighed'}</td>
+            <td>${ReTech.formatDate(r.actualPickupDate)}</td>
+            <td>
+              <button class="btn btn-primary btn-sm" onclick="openIntakeRecordModal(${r.id})">
+                Confirm Intake & Log Processing
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--status-cancelled); padding: 2rem;">
+              Failed to load intake queue: ${ReTech.escapeHtml(err.message)}
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    async function loadRecords() {
+      const tbody = document.getElementById('records-tbody');
+      try {
+        const res = await ReTech.api('/api/facility/records');
+        processingRecords = res.data || [];
+
+        // Calculate recovery aggregates
+        let intakeTot = 0, recycledTot = 0, reusedTot = 0, disposedTot = 0;
+        processingRecords.forEach(rec => {
+          intakeTot += rec.weightReceivedKg || 0;
+          recycledTot += rec.weightRecycledKg || 0;
+          reusedTot += rec.weightReusedKg || 0;
+          disposedTot += rec.weightDisposedKg || 0;
+        });
+
+        document.getElementById('fac-stat-intake').textContent = intakeTot.toFixed(2) + ' kg';
+        document.getElementById('fac-stat-recycled').textContent = recycledTot.toFixed(2) + ' kg';
+        document.getElementById('fac-stat-reused').textContent = reusedTot.toFixed(2) + ' kg';
+        document.getElementById('fac-stat-disposed').textContent = disposedTot.toFixed(2) + ' kg';
+
+        if (processingRecords.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="9" style="text-align: center; color: var(--neutral-500); padding: 2.5rem;">
+                No processing records logged yet. Confirm inbound items above to generate verified recovery logs.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = processingRecords.map(rec => `
+          <tr>
+            <td>
+              <a href="/tracking.html?code=${encodeURIComponent(rec.trackingCode)}" style="font-family: monospace; font-weight: 700; color: var(--primary-700);">
+                ${ReTech.escapeHtml(rec.trackingCode)}
+              </a>
+            </td>
+            <td style="font-weight: 600;">${ReTech.escapeHtml(rec.itemName)}</td>
+            <td><span class="status-pill status-UNDER_PROCESSING" style="font-size:0.75rem;">${ReTech.escapeHtml(rec.stageDescription)}</span></td>
+            <td><span class="status-pill status-RECYCLING_COMPLETED" style="font-size:0.75rem;">${ReTech.escapeHtml(rec.outcomeDescription)}</span></td>
+            <td>${(rec.weightRecycledKg || 0).toFixed(2)} kg</td>
+            <td>${(rec.weightReusedKg || 0).toFixed(2)} kg</td>
+            <td>${(rec.weightDisposedKg || 0).toFixed(2)} kg</td>
+            <td style="font-size: 0.85rem; max-width: 250px;">${ReTech.escapeHtml(rec.verificationNotes)}</td>
+            <td style="font-size: 0.8rem; color: var(--neutral-500);">${ReTech.formatDate(rec.recordedAt)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; color: var(--status-cancelled); padding: 2rem;">
+              Failed to load records: ${ReTech.escapeHtml(err.message)}
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function openIntakeRecordModal(requestId) {
+      const r = intakeRequests.find(item => item.id === requestId);
+      if (!r) return;
+
+      document.getElementById('rec-req-id').value = r.id;
+      document.getElementById('rec-modal-item').textContent = `${r.itemName} (${r.trackingCode}) — Scaled Weight: ${r.actualWeightKg ? r.actualWeightKg.toFixed(2) + ' kg' : 'N/A'}`;
+      document.getElementById('rec-qty').value = r.quantity || 1;
+      document.getElementById('rec-weight-received').value = r.actualWeightKg || r.estimatedWeightKg || '';
+      document.getElementById('rec-weight-recycled').value = (r.actualWeightKg ? (r.actualWeightKg * 0.75).toFixed(2) : '0.00');
+      document.getElementById('rec-weight-reused').value = (r.actualWeightKg ? (r.actualWeightKg * 0.15).toFixed(2) : '0.00');
+      document.getElementById('rec-weight-disposed').value = (r.actualWeightKg ? (r.actualWeightKg * 0.10).toFixed(2) : '0.00');
+      document.getElementById('rec-stage-select').value = 'COMPLETED';
+      document.getElementById('rec-notes').value = '';
+
+      ReTech.openModal('modal-process-record');
+    }
+
+    document.getElementById('process-record-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const requestId = document.getElementById('rec-req-id').value;
+      const facilityId = document.getElementById('rec-facility-select').value;
+      const stage = document.getElementById('rec-stage-select').value;
+      const qty = parseInt(document.getElementById('rec-qty').value, 10);
+      const weightReceived = parseFloat(document.getElementById('rec-weight-received').value);
+      const weightReused = parseFloat(document.getElementById('rec-weight-reused').value) || 0;
+      const weightRecycled = parseFloat(document.getElementById('rec-weight-recycled').value) || 0;
+      const weightDisposed = parseFloat(document.getElementById('rec-weight-disposed').value) || 0;
+      const outcome = document.getElementById('rec-outcome-select').value;
+      const notes = document.getElementById('rec-notes').value.trim();
+
+      const btn = document.getElementById('save-record-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving Record...';
+
+      try {
+        await ReTech.api('/api/facility/records', {
+          method: 'POST',
+          body: JSON.stringify({
+            requestId: parseInt(requestId, 10),
+            facilityId: parseInt(facilityId, 10),
+            stage: stage,
+            quantityReceived: qty,
+            weightReceivedKg: weightReceived,
+            weightReusedKg: weightReused,
+            weightRecycledKg: weightRecycled,
+            weightDisposedKg: weightDisposed,
+            outcome: outcome,
+            verificationNotes: notes
+          })
+        });
+
+        ReTech.closeModal('modal-process-record');
+        ReTech.showToast('Processing evidence record logged successfully!', 'success');
+        loadFacilityData();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to log processing record', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Evidence Record';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', initFacilityPortal);
+  </script>
+</body>
+</html>

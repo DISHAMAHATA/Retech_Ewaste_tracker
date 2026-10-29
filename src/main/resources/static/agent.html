@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collection Agent Portal — ReTech</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#128666;</div>
+        <span>ReTech Agent Fleet</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/agent.html" class="active">Pickups Schedule</a></li>
+        <li><a href="/tracking.html">Track E-Waste</a></li>
+        <li><a href="/centres.html">Centres</a></li>
+      </ul>
+      <div class="nav-user" id="nav-user-container"></div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Agent Pickup Route & Dispatch</h1>
+        <p class="page-subtitle">Doorstep verification, inspection, and safe transit to certified consolidation hubs</p>
+      </div>
+      <div>
+        <button class="btn btn-secondary" onclick="loadAgentRequests()">&#8635; Refresh Route</button>
+      </div>
+    </div>
+
+    <!-- Agent Operational Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Assigned Pickups</div>
+        <div class="stat-value" id="agent-stat-total">0</div>
+        <div class="stat-desc">Total tasks on your roster</div>
+      </div>
+      <div class="stat-card stat-warning">
+        <div class="stat-label">Pending Pickups</div>
+        <div class="stat-value" id="agent-stat-pending">0</div>
+        <div class="stat-desc">Awaiting doorstep pickup</div>
+      </div>
+      <div class="stat-card stat-accent">
+        <div class="stat-label">Completed Collections</div>
+        <div class="stat-value" id="agent-stat-completed">0</div>
+        <div class="stat-desc">Physically collected and weighed</div>
+      </div>
+    </div>
+
+    <!-- Pickups Table -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Assigned Pickup Queue</h2>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tracking Code</th>
+              <th>Customer & Phone</th>
+              <th>Item & Quantity</th>
+              <th>Condition</th>
+              <th>Pickup Address</th>
+              <th>Scheduled Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="agent-queue-tbody">
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                Loading your assigned pickups...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Complete Pickup & Record Weight -->
+  <div class="modal-overlay" id="modal-update-pickup">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">&#9989; Confirm Doorstep Collection</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="pickup-update-form">
+        <div class="modal-body">
+          <input type="hidden" id="pickup-req-id">
+
+          <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-md);">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--neutral-500); text-transform: uppercase;">Item</div>
+            <div style="font-weight: 700; font-size: 1.05rem;" id="pickup-modal-item"></div>
+            <div style="font-size: 0.85rem; color: var(--neutral-600);" id="pickup-modal-customer"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required" for="pickup-actual-weight">Verified Scale Weight (kg)</label>
+              <input type="number" id="pickup-actual-weight" class="form-control" step="0.01" min="0.01" max="1000" placeholder="e.g. 2.35" required>
+              <div class="form-hint">Physical weight measured at doorstep</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label required" for="pickup-actual-date">Collection Date</label>
+              <input type="date" id="pickup-actual-date" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="pickup-remarks">Agent Inspection Remarks</label>
+            <textarea id="pickup-remarks" class="form-control" placeholder="e.g. Serial # checked, power cord bundled, loaded into insulated tote bin." maxlength="500"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" id="pickup-save-btn" class="btn btn-primary">Confirm Physical Collection</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    let assignedRequests = [];
+
+    async function initAgentPortal() {
+      if (!ReTech.requireRole(['ROLE_AGENT', 'ROLE_ADMIN'])) return;
+      loadAgentRequests();
+    }
+
+    async function loadAgentRequests() {
+      const tbody = document.getElementById('agent-queue-tbody');
+      try {
+        const res = await ReTech.api('/api/agent/requests');
+        assignedRequests = res.data || [];
+
+        // Calculate stats
+        const total = assignedRequests.length;
+        const pending = assignedRequests.filter(r => ['REQUEST_APPROVED', 'PICKUP_SCHEDULED'].includes(r.status)).length;
+        const completed = assignedRequests.filter(r => ['COLLECTED', 'RECEIVED_AT_FACILITY', 'UNDER_PROCESSING', 'RECYCLING_COMPLETED'].includes(r.status)).length;
+
+        document.getElementById('agent-stat-total').textContent = total;
+        document.getElementById('agent-stat-pending').textContent = pending;
+        document.getElementById('agent-stat-completed').textContent = completed;
+
+        renderQueue();
+      } catch (err) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--status-cancelled); padding: 2rem;">
+              Failed to load assigned route: ${ReTech.escapeHtml(err.message)}
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function renderQueue() {
+      const tbody = document.getElementById('agent-queue-tbody');
+      if (assignedRequests.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--neutral-500); padding: 2.5rem;">
+              No pickups currently assigned to your route. Check back later or contact your dispatcher.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = assignedRequests.map(r => `
+        <tr>
+          <td>
+            <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" style="font-family: monospace; font-weight: 700; color: var(--primary-700);">
+              ${ReTech.escapeHtml(r.trackingCode)}
+            </a>
+          </td>
+          <td>
+            <div style="font-weight: 600;">${ReTech.escapeHtml(r.customerName)}</div>
+            <a href="tel:${ReTech.escapeHtml(r.customerPhone)}" style="font-size: 0.8rem; color: var(--neutral-500);">&#128222; ${ReTech.escapeHtml(r.customerPhone)}</a>
+          </td>
+          <td>
+            <div style="font-weight: 600;">${ReTech.escapeHtml(r.itemName)}</div>
+            <span style="font-size: 0.8rem; color: var(--neutral-500);">${r.quantity} unit(s) &bull; ${ReTech.escapeHtml(r.categoryLabel)}</span>
+          </td>
+          <td>${ReTech.escapeHtml(r.itemConditionLabel)}</td>
+          <td>
+            <div style="font-size: 0.85rem;">${ReTech.escapeHtml(r.pickupAddress)}</div>
+            <div style="font-size: 0.775rem; color: var(--neutral-500);">${ReTech.escapeHtml(r.city)} (${ReTech.escapeHtml(r.postalCode)})</div>
+          </td>
+          <td>${ReTech.formatDate(r.preferredPickupDate)}</td>
+          <td>${ReTech.getStatusBadge(r.status, r.statusDisplayName)}</td>
+          <td>
+            ${r.status === 'PICKUP_SCHEDULED' ? `
+              <button class="btn btn-primary btn-sm" onclick="openPickupModal(${r.id})">Mark Collected</button>
+            ` : `
+              <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" class="btn btn-outline btn-sm">Audit Log</a>
+            `}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openPickupModal(requestId) {
+      const r = assignedRequests.find(item => item.id === requestId);
+      if (!r) return;
+
+      document.getElementById('pickup-req-id').value = r.id;
+      document.getElementById('pickup-modal-item').textContent = `${r.itemName} (${r.trackingCode})`;
+      document.getElementById('pickup-modal-customer').textContent = `${r.customerName} — ${r.pickupAddress}, ${r.city}`;
+      document.getElementById('pickup-actual-weight').value = r.estimatedWeightKg || '';
+      document.getElementById('pickup-actual-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('pickup-remarks').value = '';
+
+      ReTech.openModal('modal-update-pickup');
+    }
+
+    document.getElementById('pickup-update-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('pickup-req-id').value;
+      const weight = parseFloat(document.getElementById('pickup-actual-weight').value);
+      const date = document.getElementById('pickup-actual-date').value;
+      const remarks = document.getElementById('pickup-remarks').value.trim();
+      const btn = document.getElementById('pickup-save-btn');
+
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+
+      try {
+        await ReTech.api(`/api/agent/requests/${id}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            newStatus: 'COLLECTED',
+            actualWeightKg: weight,
+            actualPickupDate: date,
+            remarks: remarks || 'Doorstep physical inspection and collection completed'
+          })
+        });
+
+        ReTech.closeModal('modal-update-pickup');
+        ReTech.showToast('Item successfully marked as COLLECTED', 'success');
+        loadAgentRequests();
+      } catch (err) {
+        ReTech.showToast(err.message || 'Failed to update status', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirm Physical Collection';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', initAgentPortal);
+  </script>
+</body>
+</html>

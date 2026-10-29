@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collection Centres Directory — ReTech</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .filter-bar {
+      background: var(--white);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .centre-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.5rem;
+    }
+    .centre-card {
+      background: var(--white);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+    .centre-card:hover {
+      border-color: var(--primary-500);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .centre-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary-900);
+      margin-bottom: 0.5rem;
+    }
+    .category-tag-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 1rem;
+    }
+    .category-tag {
+      font-size: 0.725rem;
+      padding: 0.2rem 0.5rem;
+      background: var(--primary-50);
+      border: 1px solid var(--primary-200);
+      color: var(--primary-800);
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+    }
+    .demo-notice {
+      background: #f8fafc;
+      border: 1px dashed var(--neutral-300);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      font-size: 0.825rem;
+      color: var(--neutral-600);
+      margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#9851;</div>
+        <span>ReTech</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/index.html">Home</a></li>
+        <li><a href="/tracking.html">Track E-Waste</a></li>
+        <li><a href="/centres.html" class="active">Centres</a></li>
+      </ul>
+      <div class="nav-user" id="nav-user-container"></div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Community E-Waste Collection Centres</h1>
+        <p class="page-subtitle">Find authorized drop-off depots and community collection kiosks near you</p>
+      </div>
+    </div>
+
+    <!-- Demonstration Data Banner -->
+    <div class="demo-notice">
+      &#9432; <strong>Academic Case Study Notice:</strong> The collection centres listed below represent fictional demonstration facilities configured for this semester project. No physical drop-off hubs or affiliations are implied.
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="filter-bar">
+      <div style="flex: 1; min-width: 200px;">
+        <label class="form-label" for="filter-city">Filter by City</label>
+        <select id="filter-city" class="form-control">
+          <option value="">All Available Cities</option>
+        </select>
+      </div>
+      <div style="flex: 1; min-width: 200px;">
+        <label class="form-label" for="filter-category">Filter by Accepted Category</label>
+        <select id="filter-category" class="form-control">
+          <option value="">All Categories</option>
+          <option value="LAPTOPS_COMPUTERS">Laptops & Computers</option>
+          <option value="MOBILE_TABLETS">Mobile Phones & Tablets</option>
+          <option value="ACCESSORIES_PERIPHERALS">Keyboards, Mice & Accessories</option>
+          <option value="CABLES_CHARGERS">Cables & Chargers</option>
+          <option value="TELEVISIONS_DISPLAYS">Televisions & Displays</option>
+          <option value="BATTERIES_POWERBANKS">Batteries & Power Banks</option>
+          <option value="OTHER_ELECTRONICS">Other Electronics</option>
+        </select>
+      </div>
+      <div>
+        <button id="reset-filters-btn" class="btn btn-secondary" style="height: 42px;">Reset</button>
+      </div>
+    </div>
+
+    <!-- Centre Cards Grid -->
+    <div class="centre-card-grid" id="centres-grid">
+      <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--neutral-400);">
+        Loading collection centres...
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const citySelect = document.getElementById('filter-city');
+    const categorySelect = document.getElementById('filter-category');
+    const grid = document.getElementById('centres-grid');
+
+    async function initCentresPage() {
+      await loadCities();
+      await fetchCentres();
+    }
+
+    async function loadCities() {
+      try {
+        const res = await ReTech.api('/api/centres/cities');
+        if (res && res.data) {
+          res.data.forEach(city => {
+            const opt = document.createElement('option');
+            opt.value = city;
+            opt.textContent = city;
+            citySelect.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        console.warn('Could not load distinct cities:', err);
+      }
+    }
+
+    async function fetchCentres() {
+      const city = citySelect.value;
+      const category = categorySelect.value;
+
+      let url = '/api/centres';
+      const params = new URLSearchParams();
+      if (city) params.append('city', city);
+      if (category) params.append('category', category);
+      if (params.toString()) url += `?${params.toString()}`;
+
+      try {
+        const res = await ReTech.api(url);
+        renderCentres(res.data || []);
+      } catch (err) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; color: var(--status-cancelled); padding: 2rem;">
+            Failed to load centres: ${ReTech.escapeHtml(err.message)}
+          </div>
+        `;
+      }
+    }
+
+    function renderCentres(centres) {
+      if (centres.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; color: var(--neutral-500); padding: 3rem;">
+            No collection centres match the selected city or category criteria.
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = centres.map(c => {
+        const categories = (c.supportedCategories || '').split(',').map(s => s.trim()).filter(Boolean);
+        return `
+          <div class="centre-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <h3 class="centre-title">${ReTech.escapeHtml(c.name)}</h3>
+                <span class="status-pill status-RECYCLING_COMPLETED" style="font-size: 0.7rem;">Active Hub</span>
+              </div>
+              <p style="font-size: 0.9rem; color: var(--neutral-700); margin-bottom: 0.5rem;">
+                &#128205; ${ReTech.escapeHtml(c.address)}, ${ReTech.escapeHtml(c.city)} &bull; ${ReTech.escapeHtml(c.postalCode)}
+              </p>
+              ${c.operatingHours ? `
+                <p style="font-size: 0.825rem; color: var(--neutral-500); margin-bottom: 0.25rem;">
+                  &#128340; <strong>Hours:</strong> ${ReTech.escapeHtml(c.operatingHours)}
+                </p>
+              ` : ''}
+              ${c.contactPhone ? `
+                <p style="font-size: 0.825rem; color: var(--neutral-500); margin-bottom: 0.25rem;">
+                  &#128222; <strong>Phone:</strong> ${ReTech.escapeHtml(c.contactPhone)}
+                </p>
+              ` : ''}
+              ${c.contactEmail ? `
+                <p style="font-size: 0.825rem; color: var(--neutral-500);">
+                  &#9993; <strong>Email:</strong> ${ReTech.escapeHtml(c.contactEmail)}
+                </p>
+              ` : ''}
+            </div>
+
+            <div>
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--neutral-500); text-transform: uppercase; margin-top: 1rem;">
+                Accepted Categories:
+              </div>
+              <div class="category-tag-group">
+                ${categories.map(cat => `<span class="category-tag">${ReTech.escapeHtml(cat.replace(/_/g, ' '))}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    citySelect.addEventListener('change', fetchCentres);
+    categorySelect.addEventListener('change', fetchCentres);
+    document.getElementById('reset-filters-btn').addEventListener('click', () => {
+      citySelect.value = '';
+      categorySelect.value = '';
+      fetchCentres();
+    });
+
+    document.addEventListener('DOMContentLoaded', initCentresPage);
+  </script>
+</body>
+</html>

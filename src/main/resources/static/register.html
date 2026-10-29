@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Registration — ReTech</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .auth-wrapper {
+      min-height: calc(100vh - 4.25rem - 100px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.25rem;
+    }
+    .auth-card {
+      max-width: 580px;
+      width: 100%;
+      background: var(--white);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem;
+      box-shadow: var(--shadow-lg);
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#9851;</div>
+        <span>ReTech</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/index.html">Home</a></li>
+        <li><a href="/tracking.html">Track E-Waste</a></li>
+        <li><a href="/centres.html">Centres</a></li>
+      </ul>
+      <div class="nav-user">
+        <a href="/login.html" class="btn btn-outline btn-sm">Sign In</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Register Form Wrapper -->
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--primary-900);">Join ReTech</h1>
+        <p style="font-size: 0.9rem; color: var(--neutral-500); margin-top: 0.25rem;">Create a customer account to schedule e-waste pickups and track recycling</p>
+      </div>
+
+      <div id="register-alert" style="display: none; margin-bottom: 1.25rem; padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.875rem;"></div>
+
+      <form id="register-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label required" for="username">Username</label>
+            <input type="text" id="username" class="form-control" placeholder="e.g. ananya_s" required minlength="3" maxlength="50">
+            <div class="form-hint">Alphanumeric, dots, hyphens (3-50 chars)</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="email">Email Address</label>
+            <input type="email" id="email" class="form-control" placeholder="ananya@example.com" required maxlength="100">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label required" for="fullName">Full Name</label>
+            <input type="text" id="fullName" class="form-control" placeholder="Ananya Sharma" required minlength="2" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="phone">Phone Number</label>
+            <input type="tel" id="phone" class="form-control" placeholder="+91-9876543210" required>
+            <div class="form-hint">Used for doorstep pickup coordination</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required" for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="At least 8 characters" required minlength="8" maxlength="100" autocomplete="new-password">
+          <div class="form-hint">Must contain at least 8 characters</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="address">Pickup Street Address</label>
+          <input type="text" id="address" class="form-control" placeholder="Flat, building, street address" maxlength="255">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="city">City</label>
+            <input type="text" id="city" class="form-control" placeholder="Metro City" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="postalCode">Postal Code</label>
+            <input type="text" id="postalCode" class="form-control" placeholder="560001" maxlength="20">
+          </div>
+        </div>
+
+        <button type="submit" id="register-submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 0.75rem;">
+          Create Customer Account
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 1.25rem; font-size: 0.875rem; color: var(--neutral-600);">
+        Already have an account? <a href="/login.html" style="font-weight: 600;">Sign In Here</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const form = document.getElementById('register-form');
+    const alertBox = document.getElementById('register-alert');
+    const submitBtn = document.getElementById('register-submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+
+      const password = document.getElementById('password').value;
+      if (password.length < 8) {
+        alertBox.textContent = 'Password must be at least 8 characters long.';
+        alertBox.style.background = '#fee2e2';
+        alertBox.style.color = '#991b1b';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating Account...';
+
+      const payload = {
+        username: document.getElementById('username').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: password,
+        fullName: document.getElementById('fullName').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        city: document.getElementById('city').value.trim(),
+        postalCode: document.getElementById('postalCode').value.trim()
+      };
+
+      try {
+        const res = await ReTech.api('/api/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        if (res && res.success) {
+          window.location.href = '/login.html?registered=true';
+        }
+      } catch (err) {
+        alertBox.textContent = err.message || 'Registration failed. Please check your inputs.';
+        alertBox.style.background = '#fee2e2';
+        alertBox.style.color = '#991b1b';
+        alertBox.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Customer Account';
+      }
+    });
+  </script>
+</body>
+</html>

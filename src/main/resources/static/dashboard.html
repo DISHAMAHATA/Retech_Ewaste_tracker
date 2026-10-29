@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard — ReTech</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#9851;</div>
+        <span>ReTech</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/dashboard.html" class="active">Dashboard</a></li>
+        <li><a href="/my-requests.html">My Requests</a></li>
+        <li><a href="/tracking.html">Track Item</a></li>
+        <li><a href="/centres.html">Centres</a></li>
+      </ul>
+      <div class="nav-user" id="nav-user-container"></div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title" id="welcome-title">Customer Dashboard</h1>
+        <p class="page-subtitle">Track your e-waste disposal footprint and manage collection requests</p>
+      </div>
+      <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-secondary" onclick="openProfileModal()">
+          &#128100; My Profile
+        </button>
+        <button class="btn btn-primary" onclick="openNewRequestModal()">
+          &#10010; Register New E-Waste
+        </button>
+      </div>
+    </div>
+
+    <!-- Personal Environmental Impact Statistics -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Requests Submitted</div>
+        <div class="stat-value" id="cust-stat-submitted">0</div>
+        <div class="stat-desc">Total pickups registered</div>
+      </div>
+      <div class="stat-card stat-info">
+        <div class="stat-label">Collected by Agents</div>
+        <div class="stat-value" id="cust-stat-collected">0</div>
+        <div class="stat-desc">Picked up from doorstep</div>
+      </div>
+      <div class="stat-card stat-accent">
+        <div class="stat-label">Recycled Weight</div>
+        <div class="stat-value" id="cust-stat-weight">0.00 kg</div>
+        <div class="stat-desc">Confirmed material recovery</div>
+      </div>
+      <div class="stat-card stat-warning">
+        <div class="stat-label">CO2e Offset</div>
+        <div class="stat-value" id="cust-stat-co2">0.00 kg</div>
+        <div class="stat-desc">Avoided environmental emissions</div>
+      </div>
+    </div>
+
+    <!-- Recent Requests Section -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div class="card-header">
+        <h2 class="card-title">My Recent Collection Requests</h2>
+        <a href="/my-requests.html" class="btn btn-outline btn-sm">View All Requests &rarr;</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tracking Code</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Quantity</th>
+              <th>Weight</th>
+              <th>Status</th>
+              <th>Pickup Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recent-requests-tbody">
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                Loading your collection requests...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Register New E-Waste Request -->
+  <div class="modal-overlay" id="modal-new-request">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">&#128230; Register E-Waste Collection</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="new-request-form">
+        <div class="modal-body">
+          <div id="new-req-alert" style="display:none; margin-bottom: 1rem; padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem;"></div>
+
+          <div class="form-group">
+            <label class="form-label required" for="reqItemName">Item Name / Brand & Model</label>
+            <input type="text" id="reqItemName" class="form-control" placeholder="e.g. Dell Inspiron 15 Laptop" required maxlength="150">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required" for="reqCategory">E-Waste Category</label>
+              <select id="reqCategory" class="form-control" required>
+                <option value="">Select Category</option>
+                <option value="LAPTOPS_COMPUTERS">Laptops & Computers</option>
+                <option value="MOBILE_TABLETS">Mobile Phones & Tablets</option>
+                <option value="ACCESSORIES_PERIPHERALS">Keyboards, Mice & Accessories</option>
+                <option value="CABLES_CHARGERS">Cables & Chargers</option>
+                <option value="TELEVISIONS_DISPLAYS">Televisions & Displays</option>
+                <option value="BATTERIES_POWERBANKS">Batteries & Power Banks</option>
+                <option value="OTHER_ELECTRONICS">Other Household Electronics</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label required" for="reqCondition">Item Condition</label>
+              <select id="reqCondition" class="form-control" required>
+                <option value="NON_WORKING">Non-working / Damaged</option>
+                <option value="PARTIALLY_WORKING">Partially Working</option>
+                <option value="WORKING">Working / Functional</option>
+                <option value="OBSOLETE_SCRAP">Obsolete / Scrap</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required" for="reqQuantity">Quantity (Items)</label>
+              <input type="number" id="reqQuantity" class="form-control" value="1" min="1" max="100" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reqWeight">Estimated Weight (kg)</label>
+              <input type="number" id="reqWeight" class="form-control" step="0.01" min="0.01" max="500" placeholder="e.g. 2.50">
+              <div class="form-hint">Leave blank if unknown</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="reqAddress">Doorstep Pickup Street Address</label>
+            <input type="text" id="reqAddress" class="form-control" placeholder="Apartment / house number, street name" required maxlength="255">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required" for="reqCity">City</label>
+              <input type="text" id="reqCity" class="form-control" placeholder="Metro City" required maxlength="100">
+            </div>
+            <div class="form-group">
+              <label class="form-label required" for="reqPostalCode">Postal Code</label>
+              <input type="text" id="reqPostalCode" class="form-control" placeholder="560001" required maxlength="20">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reqPickupDate">Preferred Pickup Date</label>
+            <input type="date" id="reqPickupDate" class="form-control">
+            <div class="form-hint">Collection agent will confirm arrival on this date</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reqNotes">Additional Notes / Handling Instructions</label>
+            <textarea id="reqNotes" class="form-control" placeholder="Mention battery state, gate pass info, or packaging details..." maxlength="500"></textarea>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="reqAccuracyConfirm" required>
+            <label for="reqAccuracyConfirm" style="font-size: 0.85rem; color: var(--neutral-700);">
+              I confirm that the electronic items described above belong to me and the information provided is accurate.
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" id="submit-request-btn" class="btn btn-primary">Submit Pickup Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: User Profile Edit -->
+  <div class="modal-overlay" id="modal-profile">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">&#128100; My Profile</h3>
+        <button class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form id="profile-form">
+        <div class="modal-body">
+          <div id="profile-alert" style="display:none; margin-bottom: 1rem; padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.85rem;"></div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <input type="text" id="profUsername" class="form-control" disabled style="background:#f1f5f9;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="profEmail" class="form-control" disabled style="background:#f1f5f9;">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required" for="profFullName">Full Name</label>
+              <input type="text" id="profFullName" class="form-control" required maxlength="100">
+            </div>
+            <div class="form-group">
+              <label class="form-label required" for="profPhone">Phone Number</label>
+              <input type="tel" id="profPhone" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="profAddress">Default Pickup Address</label>
+            <input type="text" id="profAddress" class="form-control" maxlength="255">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="profCity">City</label>
+              <input type="text" id="profCity" class="form-control" maxlength="100">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profPostalCode">Postal Code</label>
+              <input type="text" id="profPostalCode" class="form-control" maxlength="20">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+          <button type="submit" id="save-profile-btn" class="btn btn-primary">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    let cachedProfile = null;
+
+    async function initDashboard() {
+      if (!ReTech.requireRole(['ROLE_CUSTOMER', 'ROLE_ADMIN'])) return;
+
+      const user = ReTech.getCachedUser();
+      if (user) {
+        document.getElementById('welcome-title').textContent = `Welcome, ${user.fullName}`;
+      }
+
+      // Set min date to today for preferred pickup
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('reqPickupDate').min = today;
+
+      loadImpactStats();
+      loadRecentRequests();
+      loadUserProfile();
+    }
+
+    async function loadImpactStats() {
+      try {
+        const res = await ReTech.api('/api/statistics/customer');
+        if (res && res.data) {
+          const s = res.data;
+          document.getElementById('cust-stat-submitted').textContent = s.totalRequestsSubmitted || 0;
+          document.getElementById('cust-stat-collected').textContent = s.totalRequestsCollected || 0;
+          document.getElementById('cust-stat-weight').textContent = (s.totalWeightRecycledKg || 0).toFixed(2) + ' kg';
+          document.getElementById('cust-stat-co2').textContent = (s.estimatedCo2AvoidedKg || 0).toFixed(2) + ' kg';
+        }
+      } catch (err) {
+        console.warn('Could not load customer impact stats:', err);
+      }
+    }
+
+    async function loadRecentRequests() {
+      const tbody = document.getElementById('recent-requests-tbody');
+      try {
+        const res = await ReTech.api('/api/requests');
+        if (res && res.data && res.data.length > 0) {
+          const items = res.data.slice(0, 5); // recent 5
+          tbody.innerHTML = items.map(r => `
+            <tr>
+              <td>
+                <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" style="font-family: monospace; font-weight: 700; color: var(--primary-700);">
+                  ${ReTech.escapeHtml(r.trackingCode)}
+                </a>
+              </td>
+              <td style="font-weight: 600;">${ReTech.escapeHtml(r.itemName)}</td>
+              <td>${ReTech.escapeHtml(r.categoryLabel)}</td>
+              <td>${r.quantity}</td>
+              <td>${r.actualWeightKg ? r.actualWeightKg.toFixed(2) + ' kg (verified)' : (r.estimatedWeightKg ? r.estimatedWeightKg.toFixed(2) + ' kg (est)' : 'N/A')}</td>
+              <td>${ReTech.getStatusBadge(r.status, r.statusDisplayName)}</td>
+              <td>${ReTech.formatDate(r.actualPickupDate || r.preferredPickupDate)}</td>
+              <td>
+                <a href="/tracking.html?code=${encodeURIComponent(r.trackingCode)}" class="btn btn-outline btn-sm">Track</a>
+              </td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--neutral-500); padding: 2.5rem;">
+                No collection requests submitted yet. Click <strong>Register New E-Waste</strong> above to schedule your first pickup!
+              </td>
+            </tr>
+          `;
+        }
+      } catch (err) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--status-cancelled); padding: 1.5rem;">
+              Failed to load collection requests: ${ReTech.escapeHtml(err.message)}
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    async function loadUserProfile() {
+      try {
+        const res = await ReTech.api('/api/users/me');
+        if (res && res.data) {
+          cachedProfile = res.data;
+          document.getElementById('profUsername').value = cachedProfile.username || '';
+          document.getElementById('profEmail').value = cachedProfile.email || '';
+          document.getElementById('profFullName').value = cachedProfile.fullName || '';
+          document.getElementById('profPhone').value = cachedProfile.phone || '';
+          document.getElementById('profAddress').value = cachedProfile.address || '';
+          document.getElementById('profCity').value = cachedProfile.city || '';
+          document.getElementById('profPostalCode').value = cachedProfile.postalCode || '';
+
+          // Pre-populate pickup address if empty
+          if (!document.getElementById('reqAddress').value && cachedProfile.address) {
+            document.getElementById('reqAddress').value = cachedProfile.address;
+          }
+          if (!document.getElementById('reqCity').value && cachedProfile.city) {
+            document.getElementById('reqCity').value = cachedProfile.city;
+          }
+          if (!document.getElementById('reqPostalCode').value && cachedProfile.postalCode) {
+            document.getElementById('reqPostalCode').value = cachedProfile.postalCode;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load user profile:', err);
+      }
+    }
+
+    function openNewRequestModal() {
+      document.getElementById('new-req-alert').style.display = 'none';
+      ReTech.openModal('modal-new-request');
+    }
+
+    function openProfileModal() {
+      document.getElementById('profile-alert').style.display = 'none';
+      ReTech.openModal('modal-profile');
+    }
+
+    // Submit new e-waste pickup request
+    document.getElementById('new-request-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById('new-req-alert');
+      const submitBtn = document.getElementById('submit-request-btn');
+      alertBox.style.display = 'none';
+
+      const weightVal = document.getElementById('reqWeight').value;
+      const payload = {
+        itemName: document.getElementById('reqItemName').value.trim(),
+        category: document.getElementById('reqCategory').value,
+        quantity: parseInt(document.getElementById('reqQuantity').value, 10),
+        estimatedWeightKg: weightVal ? parseFloat(weightVal) : null,
+        itemCondition: document.getElementById('reqCondition').value,
+        pickupAddress: document.getElementById('reqAddress').value.trim(),
+        city: document.getElementById('reqCity').value.trim(),
+        postalCode: document.getElementById('reqPostalCode').value.trim(),
+        preferredPickupDate: document.getElementById('reqPickupDate').value || null,
+        notes: document.getElementById('reqNotes').value.trim() || null,
+        accurateInfoConfirmed: document.getElementById('reqAccuracyConfirm').checked
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const res = await ReTech.api('/api/requests', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        ReTech.closeModal('modal-new-request');
+        document.getElementById('new-request-form').reset();
+        ReTech.showToast(`Request submitted! Tracking ID: ${res.data.trackingCode}`, 'success');
+
+        loadImpactStats();
+        loadRecentRequests();
+      } catch (err) {
+        alertBox.textContent = err.message || 'Failed to submit request. Please check your inputs.';
+        alertBox.style.background = '#fee2e2';
+        alertBox.style.color = '#991b1b';
+        alertBox.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Pickup Request';
+      }
+    });
+
+    // Save profile updates
+    document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById('profile-alert');
+      const saveBtn = document.getElementById('save-profile-btn');
+      alertBox.style.display = 'none';
+
+      const payload = {
+        fullName: document.getElementById('profFullName').value.trim(),
+        phone: document.getElementById('profPhone').value.trim(),
+        address: document.getElementById('profAddress').value.trim(),
+        city: document.getElementById('profCity').value.trim(),
+        postalCode: document.getElementById('profPostalCode').value.trim()
+      };
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      try {
+        const res = await ReTech.api('/api/users/me', {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+        ReTech.closeModal('modal-profile');
+        ReTech.showToast('Profile updated successfully!', 'success');
+        ReTech.initAuth(); // refresh nav
+      } catch (err) {
+        alertBox.textContent = err.message || 'Failed to update profile.';
+        alertBox.style.background = '#fee2e2';
+        alertBox.style.color = '#991b1b';
+        alertBox.style.display = 'block';
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Profile';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', initDashboard);
+  </script>
+</body>
+</html>

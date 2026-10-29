@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access Denied — ReTech</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#9851;</div>
+        <span>ReTech</span>
+      </a>
+      <div class="nav-user" id="nav-user-container"></div>
+    </div>
+  </nav>
+
+  <!-- Error Container -->
+  <main class="container" style="display:flex; align-items:center; justify-content:center; min-height:60vh;">
+    <div class="card" style="max-width: 520px; text-align: center; padding: 3rem 2rem;">
+      <div style="font-size: 3.5rem; color: var(--status-cancelled); margin-bottom: 1rem;">&#128274;</div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--neutral-900); margin-bottom: 0.5rem;">403 — Access Denied</h1>
+      <p style="color: var(--neutral-600); font-size: 0.95rem; margin-bottom: 2rem;">
+        You do not possess the required role permissions to access this administrative portal. Access is strictly controlled based on your authenticated role (Customer, Collection Agent, Recycling Operator, or Administrator).
+      </p>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <a href="/index.html" class="btn btn-secondary">Return Home</a>
+        <a href="/login.html" class="btn btn-primary">Sign In with Different Account</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

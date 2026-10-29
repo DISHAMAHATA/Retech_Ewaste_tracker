@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Waste Tracking — ReTech</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .track-hero {
+      background: var(--white);
+      border-bottom: 1px solid var(--neutral-200);
+      padding: 3rem 1.25rem 2.5rem;
+      text-align: center;
+    }
+    .track-input-form {
+      max-width: 550px;
+      margin: 1.5rem auto 0;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .progress-stepper {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin: 2.5rem 0 3rem;
+    }
+    .progress-stepper::before {
+      content: "";
+      position: absolute;
+      top: 1.25rem;
+      left: 2rem;
+      right: 2rem;
+      height: 4px;
+      background: var(--neutral-200);
+      z-index: 1;
+    }
+    .progress-fill {
+      position: absolute;
+      top: 1.25rem;
+      left: 2rem;
+      height: 4px;
+      background: var(--primary-600);
+      z-index: 2;
+      transition: width 0.3s ease;
+    }
+    .step-item {
+      position: relative;
+      z-index: 3;
+      text-align: center;
+      flex: 1;
+    }
+    .step-circle {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: var(--white);
+      border: 3px solid var(--neutral-300);
+      margin: 0 auto 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--neutral-500);
+      transition: all 0.2s ease;
+    }
+    .step-item.completed .step-circle {
+      background: var(--primary-700);
+      border-color: var(--primary-700);
+      color: var(--white);
+    }
+    .step-item.active .step-circle {
+      border-color: var(--primary-500);
+      color: var(--primary-800);
+      box-shadow: 0 0 0 4px rgba(82, 183, 136, 0.35);
+    }
+    .step-item.cancelled .step-circle {
+      border-color: var(--status-cancelled);
+      background: var(--status-cancelled);
+      color: var(--white);
+    }
+    .step-label {
+      font-size: 0.775rem;
+      font-weight: 600;
+      color: var(--neutral-600);
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .info-cell {
+      padding: 1rem;
+      background: var(--neutral-50);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-md);
+    }
+    .disclaimer-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius-md);
+      padding: 0.875rem 1.25rem;
+      margin-bottom: 2rem;
+      font-size: 0.85rem;
+      color: #1e40af;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/index.html" class="brand">
+        <div class="brand-icon">&#9851;</div>
+        <span>ReTech</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/index.html">Home</a></li>
+        <li><a href="/tracking.html" class="active">Track E-Waste</a></li>
+        <li><a href="/centres.html">Centres</a></li>
+      </ul>
+      <div class="nav-user" id="nav-user-container"></div>
+    </div>
+  </nav>
+
+  <!-- Search Header -->
+  <header class="track-hero">
+    <div style="max-width: 650px; margin: 0 auto;">
+      <h1 style="font-size: 2rem; font-weight: 800; color: var(--primary-900);">E-Waste Lifecycle Tracker</h1>
+      <p style="color: var(--neutral-500); font-size: 0.95rem; margin-top: 0.25rem;">
+        Verify the authentic journey of collected electronics with end-to-end transparent logs.
+      </p>
+
+      <form class="track-input-form" id="track-search-form">
+        <input type="text" id="track-code-input" class="form-control" placeholder="Enter Tracking Code (e.g., RET-2026-DEMO0001)" required>
+        <button type="submit" class="btn btn-primary" id="track-submit-btn">Track</button>
+      </form>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container" id="tracking-content" style="display: none;">
+
+    <!-- Integrity Disclaimer -->
+    <div class="disclaimer-banner">
+      <span style="font-size: 1.2rem;">&#8505;</span>
+      <div>
+        <strong>System Integrity Notice:</strong> Recorded timestamps and audit entries represent internally logged stage updates. Physical recycling completion is verified only after material recovery metrics have been logged by certified recycling facilities.
+      </div>
+    </div>
+
+    <!-- Overview Card -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 0.8rem; font-weight: 700; color: var(--neutral-500); text-transform: uppercase; letter-spacing: 0.05em;">TRACKING CODE</span>
+          <h2 style="font-size: 1.6rem; font-family: monospace; font-weight: 800; color: var(--primary-900);" id="req-code-display"></h2>
+        </div>
+        <div id="req-status-display"></div>
+      </div>
+
+      <!-- Stepper Lifecycle Progress -->
+      <div class="progress-stepper" id="stepper-container">
+        <div class="progress-fill" id="stepper-fill"></div>
+        <div class="step-item" id="step-1">
+          <div class="step-circle">1</div>
+          <div class="step-label">Submitted</div>
+        </div>
+        <div class="step-item" id="step-2">
+          <div class="step-circle">2</div>
+          <div class="step-label">Approved</div>
+        </div>
+        <div class="step-item" id="step-3">
+          <div class="step-circle">3</div>
+          <div class="step-label">Scheduled</div>
+        </div>
+        <div class="step-item" id="step-4">
+          <div class="step-circle">4</div>
+          <div class="step-label">Collected</div>
+        </div>
+        <div class="step-item" id="step-5">
+          <div class="step-circle">5</div>
+          <div class="step-label">At Facility</div>
+        </div>
+        <div class="step-item" id="step-6">
+          <div class="step-circle">6</div>
+          <div class="step-label">Processing</div>
+        </div>
+        <div class="step-item" id="step-7">
+          <div class="step-circle">7</div>
+          <div class="step-label">Recycled</div>
+        </div>
+      </div>
+
+      <!-- Item Meta Details -->
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="stat-label">Item Name</div>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="req-item-name"></div>
+        </div>
+        <div class="info-cell">
+          <div class="stat-label">Category</div>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="req-category"></div>
+        </div>
+        <div class="info-cell">
+          <div class="stat-label">Quantity & Condition</div>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="req-quantity-condition"></div>
+        </div>
+        <div class="info-cell">
+          <div class="stat-label">Weight Records</div>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="req-weight"></div>
+        </div>
+        <div class="info-cell">
+          <div class="stat-label">Pickup City</div>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="req-city"></div>
+        </div>
+        <div class="info-cell">
+          <div class="stat-label">Assigned Agent</div>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="req-agent"></div>
+        </div>
+        <div class="info-cell">
+          <div class="stat-label">Recycling Facility</div>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="req-facility"></div>
+        </div>
+        <div class="info-cell">
+          <div class="stat-label">Pickup Date</div>
+          <div style="font-weight: 700; font-size: 1.05rem;" id="req-pickup-date"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chronological Audit Timeline -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">&#128336; Verified Status Transition Audit History</h3>
+        <span style="font-size: 0.8rem; color: var(--neutral-500);">Chronological sequence</span>
+      </div>
+
+      <div class="timeline" id="timeline-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Error Alert Container -->
+  <div class="container" id="tracking-error" style="display: none;">
+    <div class="card" style="text-align: center; padding: 3rem 1.5rem; max-width: 500px; margin: 2rem auto;">
+      <div style="font-size: 3rem; color: var(--status-cancelled); margin-bottom: 1rem;">&#128269;</div>
+      <h2 style="font-size: 1.4rem; color: var(--neutral-900); margin-bottom: 0.5rem;" id="error-title">Request Not Found</h2>
+      <p style="color: var(--neutral-600); font-size: 0.925rem; margin-bottom: 1.5rem;" id="error-desc">
+        We could not locate an e-waste collection record for the specified tracking code.
+      </p>
+      <a href="/index.html" class="btn btn-secondary">Return Home</a>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const form = document.getElementById('track-search-form');
+    const input = document.getElementById('track-code-input');
+    const content = document.getElementById('tracking-content');
+    const errBox = document.getElementById('tracking-error');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = input.value.trim().toUpperCase();
+      if (code) {
+        window.history.pushState({}, '', `/tracking.html?code=${encodeURIComponent(code)}`);
+        fetchTrackingData(code);
+      }
+    });
+
+    async function fetchTrackingData(code) {
+      content.style.display = 'none';
+      errBox.style.display = 'none';
+
+      try {
+        const res = await ReTech.api(`/api/requests/track/${encodeURIComponent(code)}`);
+        if (res && res.data) {
+          renderTracking(res.data);
+          content.style.display = 'block';
+        }
+      } catch (err) {
+        document.getElementById('error-desc').textContent = err.message || 'No collection request matching that tracking ID.';
+        errBox.style.display = 'block';
+      }
+    }
+
+    function renderTracking(data) {
+      document.getElementById('req-code-display').textContent = data.trackingCode;
+      document.getElementById('req-status-display').innerHTML = ReTech.getStatusBadge(data.status, data.statusDisplayName);
+
+      document.getElementById('req-item-name').textContent = data.itemName;
+      document.getElementById('req-category').textContent = data.categoryLabel;
+      document.getElementById('req-quantity-condition').textContent = `${data.quantity} unit(s) &bull; ${data.itemConditionLabel}`;
+      
+      const verifiedWeight = data.actualWeightKg ? `${data.actualWeightKg.toFixed(2)} kg (Verified)` : null;
+      const estimatedWeight = data.estimatedWeightKg ? `${data.estimatedWeightKg.toFixed(2)} kg (Estimated)` : 'Not recorded';
+      document.getElementById('req-weight').textContent = verifiedWeight || estimatedWeight;
+
+      document.getElementById('req-city').textContent = `${data.city} (${data.postalCode})`;
+      document.getElementById('req-agent').textContent = data.assignedAgentName || 'Not yet assigned';
+      document.getElementById('req-facility').textContent = data.assignedFacilityName || 'Consolidation depot';
+      document.getElementById('req-pickup-date').textContent = ReTech.formatDate(data.actualPickupDate || data.preferredPickupDate);
+
+      // Render Progress Stepper
+      const order = data.stageOrder; // 1 to 7, or 0 (cancelled), -1 (rejected)
+      const isTerminalFailure = order <= 0;
+
+      for (let i = 1; i <= 7; i++) {
+        const el = document.getElementById(`step-${i}`);
+        el.className = 'step-item';
+        if (isTerminalFailure) {
+          if (i === 1) el.classList.add('cancelled');
+        } else {
+          if (i < order) el.classList.add('completed');
+          else if (i === order) el.classList.add('active');
+        }
+      }
+
+      const fill = document.getElementById('stepper-fill');
+      if (isTerminalFailure) {
+        fill.style.width = '0%';
+        fill.style.background = 'var(--status-cancelled)';
+      } else {
+        const pct = Math.max(0, Math.min(100, ((order - 1) / 6) * 100));
+        fill.style.width = `${pct}%`;
+        fill.style.background = 'var(--primary-600)';
+      }
+
+      // Render Timeline Audit Log
+      const timeline = document.getElementById('timeline-container');
+      if (data.statusHistory && data.statusHistory.length > 0) {
+        timeline.innerHTML = data.statusHistory.map((h, idx) => {
+          const isLatest = idx === data.statusHistory.length - 1;
+          const isCancelled = h.newStatus === 'CANCELLED' || h.newStatus === 'REQUEST_REJECTED';
+          let stepClass = isLatest ? (isCancelled ? 'cancelled' : 'active') : 'completed';
+
+          return `
+            <div class="timeline-step ${stepClass}">
+              <div class="timeline-marker">
+                ${isLatest ? '&#9679;' : '&#10003;'}
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-title">${ReTech.escapeHtml(h.newStatusDisplay)}</span>
+                  <span class="timeline-time">${ReTech.formatDateTime(h.createdAt)}</span>
+                </div>
+                <div class="timeline-actor">Logged by: ${ReTech.escapeHtml(h.changedByName)}</div>
+                ${h.remarks ? `<div class="timeline-remarks">${ReTech.escapeHtml(h.remarks)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        timeline.innerHTML = '<p style="color:var(--neutral-400);">No historical audit records available.</p>';
+      }
+    }
+
+    // Auto-check URL parameter
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      if (code) {
+        input.value = code;
+        fetchTrackingData(code);
+      }
+    });
+  </script>
+</body>
+</html>
