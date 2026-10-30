@@ -106,18 +106,18 @@ java -jar target/retech-0.0.1-SNAPSHOT.jar
 
 Once started, the console will display:
 ```
-Tomcat started on port 8080 (http) with context path '/'
+Tomcat started on port 8085 (http) with context path '/'
 Started RetechApplication in 3.5 seconds
 ```
 
 Open your browser and navigate to:  
-👉 **`http://localhost:8080`**
+👉 **`http://localhost:8085`**
 
 ---
 
 ## 👥 Demonstration User Accounts
 
-The application automatically seeds demonstration accounts upon first run. For convenience, the [Login Page](http://localhost:8080/login.html) includes **1-Click Demo Buttons** that instantly log you in under any role:
+The application automatically seeds demonstration accounts upon first run. For convenience, the [Login Page](http://localhost:8085/login.html) includes **1-Click Demo Buttons** that instantly log you in under any role:
 
 | Role | Username / Email | Password | Intended Use / Features |
 | :--- | :--- | :--- | :--- |
