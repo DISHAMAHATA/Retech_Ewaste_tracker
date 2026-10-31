@@ -101,8 +101,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
 
                 // Authenticated User Endpoints
-                .requestMatchers("/api/users/me/**").authenticated()
-                .requestMatchers("/api/requests/**").authenticated()
+                .requestMatchers("/api/users/**").authenticated()
+                .requestMatchers("/api/requests", "/api/requests/**").authenticated()
                 .requestMatchers("/api/statistics/customer").authenticated()
 
                 .anyRequest().authenticated()

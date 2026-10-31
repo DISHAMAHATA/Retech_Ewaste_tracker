@@ -52,11 +52,14 @@ public class CollectionRequestResponseDto {
         CollectionRequestResponseDto dto = new CollectionRequestResponseDto();
         dto.setId(req.getId());
         dto.setTrackingCode(req.getTrackingCode());
-        if (req.getCustomer() != null) {
-            dto.setCustomerId(req.getCustomer().getId());
-            dto.setCustomerName(req.getCustomer().getFullName());
-            dto.setCustomerEmail(req.getCustomer().getEmail());
-            dto.setCustomerPhone(req.getCustomer().getPhone());
+        try {
+            if (req.getCustomer() != null) {
+                dto.setCustomerId(req.getCustomer().getId());
+                dto.setCustomerName(req.getCustomer().getFullName());
+                dto.setCustomerEmail(req.getCustomer().getEmail());
+                dto.setCustomerPhone(req.getCustomer().getPhone());
+            }
+        } catch (Exception ignored) {
         }
         dto.setItemName(req.getItemName());
         dto.setCategory(req.getCategory());
@@ -77,21 +80,32 @@ public class CollectionRequestResponseDto {
         dto.setStageOrder(req.getStatus().getStageOrder());
         dto.setCancellable(req.getStatus().isCancellableByCustomer());
 
-        if (req.getAssignedAgent() != null) {
-            dto.setAssignedAgentId(req.getAssignedAgent().getId());
-            dto.setAssignedAgentName(req.getAssignedAgent().getFullName());
-            dto.setAssignedAgentPhone(req.getAssignedAgent().getPhone());
-        }
-        if (req.getAssignedFacility() != null) {
-            dto.setAssignedFacilityId(req.getAssignedFacility().getId());
-            dto.setAssignedFacilityName(req.getAssignedFacility().getName());
+        try {
+            if (req.getAssignedAgent() != null) {
+                dto.setAssignedAgentId(req.getAssignedAgent().getId());
+                dto.setAssignedAgentName(req.getAssignedAgent().getFullName());
+                dto.setAssignedAgentPhone(req.getAssignedAgent().getPhone());
+            }
+        } catch (Exception ignored) {
         }
 
-        if (req.getStatusHistory() != null) {
-            dto.setStatusHistory(req.getStatusHistory().stream()
-                    .map(RequestStatusHistoryDto::fromEntity)
-                    .collect(Collectors.toList()));
-        } else {
+        try {
+            if (req.getAssignedFacility() != null) {
+                dto.setAssignedFacilityId(req.getAssignedFacility().getId());
+                dto.setAssignedFacilityName(req.getAssignedFacility().getName());
+            }
+        } catch (Exception ignored) {
+        }
+
+        try {
+            if (req.getStatusHistory() != null) {
+                dto.setStatusHistory(req.getStatusHistory().stream()
+                        .map(RequestStatusHistoryDto::fromEntity)
+                        .collect(Collectors.toList()));
+            } else {
+                dto.setStatusHistory(Collections.emptyList());
+            }
+        } catch (Exception ignored) {
             dto.setStatusHistory(Collections.emptyList());
         }
 

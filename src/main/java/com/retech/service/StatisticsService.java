@@ -8,6 +8,7 @@ import com.retech.entity.enums.RequestStatus;
 import com.retech.repository.*;
 import com.retech.security.SecurityUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.StringWriter;
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ import java.math.RoundingMode;
 import java.util.*;
 
 @Service
+@Transactional(readOnly = true)
 public class StatisticsService {
 
     // Documented CO2e offset benchmark factor: 1.44 kg CO2e saved per 1 kg of certified e-waste recycled (EPA/UN WEEE studies)

@@ -33,19 +33,27 @@ public class ProcessingRecordDto {
     public static ProcessingRecordDto fromEntity(ProcessingRecord record) {
         ProcessingRecordDto dto = new ProcessingRecordDto();
         dto.setId(record.getId());
-        if (record.getCollectionRequest() != null) {
-            dto.setRequestId(record.getCollectionRequest().getId());
-            dto.setTrackingCode(record.getCollectionRequest().getTrackingCode());
-            dto.setItemName(record.getCollectionRequest().getItemName());
-        }
-        if (record.getFacility() != null) {
-            dto.setFacilityId(record.getFacility().getId());
-            dto.setFacilityName(record.getFacility().getName());
-        }
-        if (record.getOperator() != null) {
-            dto.setOperatorId(record.getOperator().getId());
-            dto.setOperatorName(record.getOperator().getFullName());
-        }
+        try {
+            if (record.getCollectionRequest() != null) {
+                dto.setRequestId(record.getCollectionRequest().getId());
+                dto.setTrackingCode(record.getCollectionRequest().getTrackingCode());
+                dto.setItemName(record.getCollectionRequest().getItemName());
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            if (record.getFacility() != null) {
+                dto.setFacilityId(record.getFacility().getId());
+                dto.setFacilityName(record.getFacility().getName());
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            if (record.getOperator() != null) {
+                dto.setOperatorId(record.getOperator().getId());
+                dto.setOperatorName(record.getOperator().getFullName());
+            }
+        } catch (Exception ignored) {}
         dto.setStage(record.getStage());
         dto.setStageDescription(record.getStage().getDescription());
         dto.setQuantityReceived(record.getQuantityReceived());

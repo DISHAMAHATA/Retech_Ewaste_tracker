@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class CollectionRequestService {
 
     private static final String CODE_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // Omits 0, 1, I, O to avoid visual confusion
